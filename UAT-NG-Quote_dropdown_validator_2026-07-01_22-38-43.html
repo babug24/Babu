@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quote Dropdown Validator - uat-ng.nationwide.com</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; padding: 20px; color: #1a2332; }
+    .container { max-width: 1400px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; border-bottom: 3px solid #0047AB; padding-bottom: 20px; margin-bottom: 24px; }
+    .header-left h1 { color: #0047AB; font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+    .header-left .subtitle { color: #5a6a7a; font-size: 14px; }
+    .header-right { text-align: right; font-size: 13px; color: #5a6a7a; }
+    .header-right .url { color: #0047AB; font-weight: 600; word-break: break-all; max-width: 400px; display: inline-block; }
+    .badge-env { display: inline-block; background: #0047AB; color: #fff; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 4px; }
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin: 24px 0 28px 0; }
+    .card { background: #f8fafc; border-radius: 12px; padding: 18px 20px; border: 1px solid #e8edf2; transition: transform 0.15s; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+    .card .number { font-size: 32px; font-weight: 700; line-height: 1.2; }
+    .card .label { font-size: 13px; color: #5a6a7a; margin-top: 2px; }
+    .card.success .number { color: #0b7e4b; }
+    .card.fail .number { color: #c72a2a; }
+    .card.total .number { color: #0047AB; }
+    .card.rate .number { color: #8b5cf6; }
+    .card.success { border-left: 4px solid #0b7e4b; }
+    .card.fail { border-left: 4px solid #c72a2a; }
+    .card.total { border-left: 4px solid #0047AB; }
+    .card.rate { border-left: 4px solid #8b5cf6; }
+    .section-title { font-size: 18px; font-weight: 600; color: #1a2332; margin: 28px 0 14px 0; padding-bottom: 8px; border-bottom: 2px solid #e8edf2; }
+    .table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid #e8edf2; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: #0047AB; color: #ffffff; padding: 12px 14px; text-align: left; font-weight: 600; white-space: nowrap; }
+    td { padding: 10px 14px; border-bottom: 1px solid #eef2f6; vertical-align: top; word-break: break-word; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+    .success-row td { background-color: #f0faf5; }
+    .success-row:hover td { background-color: #e5f5ed; }
+    .fail-row td { background-color: #fdf0ef; }
+    .fail-row:hover td { background-color: #fce8e6; }
+    .badge { display: inline-block; padding: 3px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+    .badge-pass { background: #0b7e4b; color: #fff; }
+    .badge-fail { background: #c72a2a; color: #fff; }
+    .details { font-size: 12px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e8edf2; max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-family: 'Consolas', 'Courier New', monospace; margin: 0; }
+    .category-col { color: #5a6a7a; }
+    .url-col { font-size: 11px; color: #5a6a7a; max-width: 200px; word-break: break-all; }
+    .footer { margin-top: 28px; padding-top: 16px; border-top: 1px solid #e8edf2; display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; color: #8a9aa8; }
+    .url-badge { display: inline-block; background: #eef2f6; color: #1a2332; padding: 2px 10px; border-radius: 12px; font-size: 11px; margin: 2px 4px 2px 0; word-break: break-all; }
+    .url-badge:before { content: "🌐 "; }
+    .urls-tested { margin-top: 8px; }
+    @media (max-width: 768px) { .container { padding: 16px; } .header { flex-direction: column; } .header-right { text-align: left; margin-top: 8px; } .summary { grid-template-columns: repeat(2, 1fr); } .card .number { font-size: 24px; } th, td { padding: 8px 10px; font-size: 12px; } }
+    @media print { body { background: #fff; padding: 0; } .container { box-shadow: none; border-radius: 0; padding: 20px; } .card:hover { transform: none; box-shadow: none; } tr:hover td { background: inherit; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <h1>📋 Quote Dropdown Validator</h1>
+        <div class="subtitle">
+          <span class="badge-env">uat-ng.nationwide.com</span>
+          <span class="badge-env" style="background:#6c757d;margin-left:8px;">💻 Desktop</span>
+          <div class="urls-tested">
+            <strong>URLs Tested:</strong><br>
+            <span class="url-badge">https://uat-ng.nationwide.com/personal/insurance/all-personal/</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div><strong>Started:</strong> 7/1/2026, 10:38:43 PM</div>
+        <div><strong>Finished:</strong> 7/1/2026, 10:39:15 PM</div>
+        <div style="margin-top:4px;font-size:11px;color:#8a9aa8;">
+          Report generated: 7/1/2026, 10:39:15 PM
+        </div>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="card total">
+        <div class="number">1</div>
+        <div class="label">Total Checks</div>
+      </div>
+      <div class="card success">
+        <div class="number">1</div>
+        <div class="label">✅ Passed</div>
+      </div>
+      <div class="card fail">
+        <div class="number">0</div>
+        <div class="label">❌ Failed</div>
+      </div>
+      <div class="card rate">
+        <div class="number">100%</div>
+        <div class="label">📊 Success Rate</div>
+      </div>
+    </div>
+
+    
+    <div class="section-title">📊 Detailed Results</div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:200px;">Validation URL</th>
+            <th style="width:120px;">Category</th>
+            <th>Target</th>
+            <th style="width:110px;">Status</th>
+            <th style="width:180px;">Redirect URL</th>
+            <th style="width:120px;">Target Window</th>
+            <th style="width:35%;">Details</th>
+            <th style="width:160px;">Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/all-personal/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: false,
+  &quot;status&quot;: &quot;not-applicable&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:39:14 PM</td>
+            </tr>
+          
+        </tbody>
+      </table>
+    </div>
+    
+
+    <div class="footer">
+      <div>
+        <strong>Quote Dropdown Validator</strong>
+        <span style="margin:0 8px;color:#d0d7dd;">|</span>
+        Version 2.0
+        <span style="margin-left:8px;">💻 Desktop</span>
+      </div>
+      <div>
+        Total: 1 checks · 
+        <span style="color:#0b7e4b;">1 passed</span> · 
+        <span style="color:#c72a2a;">0 failed</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

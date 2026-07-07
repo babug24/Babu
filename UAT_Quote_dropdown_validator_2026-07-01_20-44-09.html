@@ -1,0 +1,2502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quote Dropdown Validator - uat-ng.nationwide.com</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; padding: 20px; color: #1a2332; }
+    .container { max-width: 1400px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; border-bottom: 3px solid #0047AB; padding-bottom: 20px; margin-bottom: 24px; }
+    .header-left h1 { color: #0047AB; font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+    .header-left .subtitle { color: #5a6a7a; font-size: 14px; }
+    .header-right { text-align: right; font-size: 13px; color: #5a6a7a; }
+    .header-right .url { color: #0047AB; font-weight: 600; word-break: break-all; max-width: 400px; display: inline-block; }
+    .badge-env { display: inline-block; background: #0047AB; color: #fff; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 4px; }
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin: 24px 0 28px 0; }
+    .card { background: #f8fafc; border-radius: 12px; padding: 18px 20px; border: 1px solid #e8edf2; transition: transform 0.15s; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+    .card .number { font-size: 32px; font-weight: 700; line-height: 1.2; }
+    .card .label { font-size: 13px; color: #5a6a7a; margin-top: 2px; }
+    .card.success .number { color: #0b7e4b; }
+    .card.fail .number { color: #c72a2a; }
+    .card.total .number { color: #0047AB; }
+    .card.rate .number { color: #8b5cf6; }
+    .card.success { border-left: 4px solid #0b7e4b; }
+    .card.fail { border-left: 4px solid #c72a2a; }
+    .card.total { border-left: 4px solid #0047AB; }
+    .card.rate { border-left: 4px solid #8b5cf6; }
+    .section-title { font-size: 18px; font-weight: 600; color: #1a2332; margin: 28px 0 14px 0; padding-bottom: 8px; border-bottom: 2px solid #e8edf2; }
+    .table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid #e8edf2; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: #0047AB; color: #ffffff; padding: 12px 14px; text-align: left; font-weight: 600; white-space: nowrap; }
+    td { padding: 10px 14px; border-bottom: 1px solid #eef2f6; vertical-align: top; word-break: break-word; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+    .success-row td { background-color: #f0faf5; }
+    .success-row:hover td { background-color: #e5f5ed; }
+    .fail-row td { background-color: #fdf0ef; }
+    .fail-row:hover td { background-color: #fce8e6; }
+    .badge { display: inline-block; padding: 3px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+    .badge-pass { background: #0b7e4b; color: #fff; }
+    .badge-fail { background: #c72a2a; color: #fff; }
+    .details { font-size: 12px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e8edf2; max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-family: 'Consolas', 'Courier New', monospace; margin: 0; }
+    .category-col { color: #5a6a7a; }
+    .url-col { font-size: 11px; color: #5a6a7a; max-width: 200px; word-break: break-all; }
+    .footer { margin-top: 28px; padding-top: 16px; border-top: 1px solid #e8edf2; display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; color: #8a9aa8; }
+    .url-badge { display: inline-block; background: #eef2f6; color: #1a2332; padding: 2px 10px; border-radius: 12px; font-size: 11px; margin: 2px 4px 2px 0; word-break: break-all; }
+    .url-badge:before { content: "🌐 "; }
+    .urls-tested { margin-top: 8px; }
+    @media (max-width: 768px) { .container { padding: 16px; } .header { flex-direction: column; } .header-right { text-align: left; margin-top: 8px; } .summary { grid-template-columns: repeat(2, 1fr); } .card .number { font-size: 24px; } th, td { padding: 8px 10px; font-size: 12px; } }
+    @media print { body { background: #fff; padding: 0; } .container { box-shadow: none; border-radius: 0; padding: 20px; } .card:hover { transform: none; box-shadow: none; } tr:hover td { background: inherit; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <h1>📋 Quote Dropdown Validator</h1>
+        <div class="subtitle">
+          <span class="badge-env">uat-ng.nationwide.com</span>
+          <span class="badge-env" style="background:#6c757d;margin-left:8px;">💻 Desktop</span>
+          <div class="urls-tested">
+            <strong>URLs Tested:</strong><br>
+            <span class="url-badge">https://uat-ng.nationwide.com/personal/insurance/all-personal/</span><span class="url-badge">https://uat-ng.nationwide.com/personal/insurance/property/</span><span class="url-badge">https://uat-ng.nationwide.com/personal/insurance/vehicle/</span><span class="url-badge">https://uat-ng.nationwide.com/</span><span class="url-badge">https://uat-ng.nationwide.com/personal/insurance/auto/</span><span class="url-badge">https://uat-ng.nationwide.com/personal/insurance/motorcycle/</span><span class="url-badge">https://uat-ng.nationwide.com/personal/insurance/snowmobile/</span><span class="url-badge">https://uat-ng.nationwide.com/personal/insurance/homeowners/</span><span class="url-badge">https://uat-ng.nationwide.com/personal/insurance/renters/</span><span class="url-badge">https://uat-ng.nationwide.com/personal/insurance/condo/</span><span class="url-badge">https://www.nationwide.com/personal/insurance/all-personal/</span><span class="url-badge">https://www.nationwide.com/personal/insurance/property/</span><span class="url-badge">https://www.nationwide.com/personal/insurance/vehicle/</span><span class="url-badge">https://www.nationwide.com/</span><span class="url-badge">https://www.nationwide.com/personal/insurance/auto/</span><span class="url-badge">https://www.nationwide.com/personal/insurance/motorcycle/</span><span class="url-badge">https://www.nationwide.com/personal/insurance/snowmobile/</span><span class="url-badge">https://www.nationwide.com/personal/insurance/homeowners/</span><span class="url-badge">https://www.nationwide.com/personal/insurance/renters/</span><span class="url-badge">https://www.nationwide.com/personal/insurance/condo/</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div><strong>Started:</strong> 7/1/2026, 8:44:09 PM</div>
+        <div><strong>Finished:</strong> 7/1/2026, 10:17:52 PM</div>
+        <div style="margin-top:4px;font-size:11px;color:#8a9aa8;">
+          Report generated: 7/1/2026, 10:17:52 PM
+        </div>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="card total">
+        <div class="number">100</div>
+        <div class="label">Total Checks</div>
+      </div>
+      <div class="card success">
+        <div class="number">96</div>
+        <div class="label">✅ Passed</div>
+      </div>
+      <div class="card fail">
+        <div class="number">4</div>
+        <div class="label">❌ Failed</div>
+      </div>
+      <div class="card rate">
+        <div class="number">96%</div>
+        <div class="label">📊 Success Rate</div>
+      </div>
+    </div>
+
+    
+    <div class="section-title">📊 Detailed Results</div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:200px;">Validation URL</th>
+            <th style="width:120px;">Category</th>
+            <th>Target</th>
+            <th style="width:110px;">Status</th>
+            <th style="width:180px;">Redirect URL</th>
+            <th style="width:120px;">Target Window</th>
+            <th style="width:35%;">Details</th>
+            <th style="width:160px;">Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/all-personal/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: false,
+  &quot;status&quot;: &quot;not-applicable&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:44:41 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/property/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: false,
+  &quot;status&quot;: &quot;not-applicable&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:45:12 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/vehicle/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: false,
+  &quot;status&quot;: &quot;not-applicable&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:45:45 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:46:16 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Local Agent</td>
+              <td><strong>ZIP validation</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;status&quot;: &quot;spa&quot;,
+  &quot;url&quot;: &quot;https://agency.nationwide.com/search?type=location&amp;q=43215&quot;,
+  &quot;message&quot;: &quot;SPA navigation to agency page&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:46:25 PM</td>
+            </tr>
+          
+            <tr class="fail-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Auto &amp; home bundle</strong></td>
+              <td><span class="badge badge-fail">❌ FAIL</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;reason&quot;: &quot;No popup or navigation occurred after clicking the button&quot;,
+  &quot;requiresZip&quot;: true
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:47:11 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Business</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://uat-ng.nationwide.com/cp/biz-quote.html</td>
+              <td>new-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;Business&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;popup&quot;,
+  &quot;finalUrl&quot;: &quot;https://uat-ng.nationwide.com/cp/biz-quote.html&quot;,
+  &quot;redirectUrl&quot;: &quot;https://uat-ng.nationwide.com/cp/biz-quote.html&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: false,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:47:48 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Life</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://lifeessentials.nationwide.com/</td>
+              <td>new-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;Life&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;popup&quot;,
+  &quot;finalUrl&quot;: &quot;https://lifeessentials.nationwide.com/&quot;,
+  &quot;redirectUrl&quot;: &quot;https://lifeessentials.nationwide.com/&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: false,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:48:24 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Pet</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://qec3.petinsurance.com/quote1?OM=CI0438</td>
+              <td>new-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;Pet&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;popup&quot;,
+  &quot;finalUrl&quot;: &quot;https://qec3.petinsurance.com/quote1?OM=CI0438&quot;,
+  &quot;redirectUrl&quot;: &quot;https://qec3.petinsurance.com/quote1?OM=CI0438&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: false,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:49:01 PM</td>
+            </tr>
+          
+            <tr class="fail-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Auto</strong></td>
+              <td><span class="badge badge-fail">❌ FAIL</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;reason&quot;: &quot;No popup or navigation occurred after clicking the button&quot;,
+  &quot;requiresZip&quot;: true
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:49:44 PM</td>
+            </tr>
+          
+            <tr class="fail-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Homeowners</strong></td>
+              <td><span class="badge badge-fail">❌ FAIL</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;reason&quot;: &quot;No popup or navigation occurred after clicking the button&quot;,
+  &quot;requiresZip&quot;: true
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:50:28 PM</td>
+            </tr>
+          
+            <tr class="fail-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Renters</strong></td>
+              <td><span class="badge badge-fail">❌ FAIL</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;reason&quot;: &quot;No popup or navigation occurred after clicking the button&quot;,
+  &quot;requiresZip&quot;: true
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:51:11 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>See all insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://uat-ng.nationwide.com/personal/insurance</td>
+              <td>new-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;All&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;popup&quot;,
+  &quot;finalUrl&quot;: &quot;https://uat-ng.nationwide.com/personal/insurance&quot;,
+  &quot;redirectUrl&quot;: &quot;https://uat-ng.nationwide.com/personal/insurance&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: true,
+  &quot;navigationSuccess&quot;: false,
+  &quot;buttonFoundBy&quot;: &quot;{\&quot;role\&quot;:\&quot;button\&quot;,\&quot;options\&quot;:{\&quot;name\&quot;:\&quot;Start your quote\&quot;}}&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:51:47 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Promo Quote</td>
+              <td><strong>Pay a personal bill</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://myservicing.nationwide.com/#/personal/quickpay/search</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;https://myservicing.nationwide.com/#/personal/quickpay/search&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://myservicing.nationwide.com/#/personal/quickpay/search&quot;,
+  &quot;redirectUrl&quot;: &quot;https://myservicing.nationwide.com/#/personal/quickpay/search&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;direct-url-navigation&quot;,
+  &quot;dropdownType&quot;: &quot;custom-tri-promo&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:52:08 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Promo Quote</td>
+              <td><strong>Pay a business bill</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://commercialservicing.nationwide.com/commercial/#/quickPay/search</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;https://commercialservicing.nationwide.com/commercial/#/quickPay/search&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://commercialservicing.nationwide.com/commercial/#/quickPay/search&quot;,
+  &quot;redirectUrl&quot;: &quot;https://commercialservicing.nationwide.com/commercial/#/quickPay/search&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;direct-url-navigation&quot;,
+  &quot;dropdownType&quot;: &quot;custom-tri-promo&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:52:37 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Promo Quote</td>
+              <td><strong>Get auto ID card</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://policyservicing.nationwide.com/#/qid/search</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;https://policyservicing.nationwide.com/#/qid/search&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://policyservicing.nationwide.com/#/qid/search&quot;,
+  &quot;redirectUrl&quot;: &quot;https://policyservicing.nationwide.com/#/qid/search&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;direct-url-navigation&quot;,
+  &quot;dropdownType&quot;: &quot;custom-tri-promo&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:52:58 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Promo Quote</td>
+              <td><strong>File a claim</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://www.nationwide.com/insurance-claims/</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;https://www.nationwide.com/insurance-claims/&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://www.nationwide.com/insurance-claims/&quot;,
+  &quot;redirectUrl&quot;: &quot;https://www.nationwide.com/insurance-claims/&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;direct-url-navigation&quot;,
+  &quot;dropdownType&quot;: &quot;custom-tri-promo&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:53:19 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Promo Quote</td>
+              <td><strong>Track a claim</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://claimsservicing.nationwide.com/claims/express-login</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;https://claimsselfservice.nationwide.com/claims/index.html#/express-login&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://claimsservicing.nationwide.com/claims/express-login&quot;,
+  &quot;redirectUrl&quot;: &quot;https://claimsservicing.nationwide.com/claims/express-login&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;direct-url-navigation&quot;,
+  &quot;dropdownType&quot;: &quot;custom-tri-promo&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:53:41 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Promo Quote</td>
+              <td><strong>Quote a new vehicle</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://policyservicing.nationwide.com/#/quick/login/add-vehicle</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;https://policyservicing.nationwide.com/#/quick/login/add-vehicle&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://policyservicing.nationwide.com/#/quick/login/add-vehicle&quot;,
+  &quot;redirectUrl&quot;: &quot;https://policyservicing.nationwide.com/#/quick/login/add-vehicle&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;direct-url-navigation&quot;,
+  &quot;dropdownType&quot;: &quot;custom-tri-promo&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:54:01 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/</span></td>
+              <td class="category-col">Promo Quote</td>
+              <td><strong>Access your retirement plan</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://login.nationwide.com/access/web/login.htm</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;https://login.nationwide.com/access/web/login.htm&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://login.nationwide.com/access/web/login.htm&quot;,
+  &quot;redirectUrl&quot;: &quot;https://login.nationwide.com/access/web/login.htm&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;direct-url-navigation&quot;,
+  &quot;dropdownType&quot;: &quot;custom-tri-promo&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:54:23 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/auto/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:54:54 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/auto/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Auto insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;personalAuto&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:55:44 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/auto/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Classic car insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?state=&amp;products=auto</td>
+              <td>new-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;classicCar&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;popup&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?state=&amp;products=auto&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?state=&amp;products=auto&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: false,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:56:23 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/auto/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>RV insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://uat-ng.nationwide.com/personal/insurance/auto/</td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;rv&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;no-action&quot;,
+  &quot;finalUrl&quot;: &quot;https://uat-ng.nationwide.com/personal/insurance/auto/&quot;,
+  &quot;redirectUrl&quot;: &quot;https://uat-ng.nationwide.com/personal/insurance/auto/&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;phone-number-only&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:56:43 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/auto/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Auto &amp; home bundle</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?state=&amp;products=auto</td>
+              <td>new-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;personalAutoHomeBundle&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;popup&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?state=&amp;products=auto&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?state=&amp;products=auto&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: false,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: false,
+      &quot;message&quot;: &quot;No error message, no navigation, and no popup occurred&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:57:25 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/motorcycle/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:57:58 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/motorcycle/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Motorcycle insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;motorcycle&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:58:50 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/motorcycle/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>ATV insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;atv&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 8:59:42 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/motorcycle/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Scooter insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;scooter&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:00:31 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/motorcycle/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Snowmobile insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;snowmobile&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:01:21 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/snowmobile/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:01:53 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/snowmobile/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Snowmobile insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;snowmobile&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:02:39 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/snowmobile/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>ATV insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;atv&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:03:28 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/snowmobile/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Motorcycle insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;motorcycle&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:04:16 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/snowmobile/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Scooter insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;scooter&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:05:06 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/homeowners/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:05:36 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/homeowners/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Homeowners insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;homeowners&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:06:23 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/homeowners/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Renters insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;tenant&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;54213&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:07:13 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/homeowners/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Condo insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;condo&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:08:01 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/renters/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:08:32 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/renters/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Renters insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;tenant&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;54213&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:09:17 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/renters/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Homeowners insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;homeowners&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:10:07 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/renters/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Condo insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;condo&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:10:55 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/condo/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:11:26 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/condo/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Condo insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;condo&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:12:12 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/condo/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Homeowners insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;homeowners&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:13:02 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://uat-ng.nationwide.com/personal/insurance/condo/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Renters insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/retrieve</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;tenant&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;54213&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;a[href*=\&quot;quote\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Navigation occurred without ZIP - redirect to quote page&quot;,
+      &quot;navigatedTo&quot;: &quot;https://getaquote.nationwide.com/retrieve&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:13:50 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/all-personal/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:14:20 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/all-personal/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Homeowners insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;HomeownersQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:14:57 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/all-personal/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Renters insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;RentersQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;54213&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:15:37 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/all-personal/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Auto insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=auto&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;AutoQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:16:17 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/all-personal/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Life insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://lifeessentials.nationwide.com/?_gl=1*kq9l2t*_gcl_au*MjA0Mzk4Mjk5OC4xNzgyOTUxMjM1*_ga*MTQyMTgzNDkwMy4xNzgyOTUxMjM1*_ga_GLJSQEPWL4*czE3ODI5NTEyMzQkbzEkZzEkdDE3ODI5NTEzNzkkajQzJGwwJGgw</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;LifeQuoteForm&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://lifeessentials.nationwide.com/?_gl=1*kq9l2t*_gcl_au*MjA0Mzk4Mjk5OC4xNzgyOTUxMjM1*_ga*MTQyMTgzNDkwMy4xNzgyOTUxMjM1*_ga_GLJSQEPWL4*czE3ODI5NTEyMzQkbzEkZzEkdDE3ODI5NTEzNzkkajQzJGwwJGgw&quot;,
+  &quot;redirectUrl&quot;: &quot;https://lifeessentials.nationwide.com/?_gl=1*kq9l2t*_gcl_au*MjA0Mzk4Mjk5OC4xNzgyOTUxMjM1*_ga*MTQyMTgzNDkwMy4xNzgyOTUxMjM1*_ga_GLJSQEPWL4*czE3ODI5NTEyMzQkbzEkZzEkdDE3ODI5NTEzNzkkajQzJGwwJGgw&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:17:02 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/all-personal/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Condo insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;CondoQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:17:42 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/all-personal/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Motorcycle insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/prospect-page?products=powersports&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;MotorcycleQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/prospect-page?products=powersports&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/prospect-page?products=powersports&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:18:23 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/all-personal/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Pet insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://qec3.petinsurance.com/quote1?_gl=1*1bktgz1*_gcl_au*MjA0Mzk4Mjk5OC4xNzgyOTUxMjM1*_ga*MTQyMTgzNDkwMy4xNzgyOTUxMjM1*_ga_GLJSQEPWL4*czE3ODI5NTEyMzQkbzEkZzEkdDE3ODI5NTE1MDQkajQ0JGwwJGgw</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;PetQuoteForm&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://qec3.petinsurance.com/quote1?_gl=1*1bktgz1*_gcl_au*MjA0Mzk4Mjk5OC4xNzgyOTUxMjM1*_ga*MTQyMTgzNDkwMy4xNzgyOTUxMjM1*_ga_GLJSQEPWL4*czE3ODI5NTEyMzQkbzEkZzEkdDE3ODI5NTE1MDQkajQ0JGwwJGgw&quot;,
+  &quot;redirectUrl&quot;: &quot;https://qec3.petinsurance.com/quote1?_gl=1*1bktgz1*_gcl_au*MjA0Mzk4Mjk5OC4xNzgyOTUxMjM1*_ga*MTQyMTgzNDkwMy4xNzgyOTUxMjM1*_ga_GLJSQEPWL4*czE3ODI5NTEyMzQkbzEkZzEkdDE3ODI5NTE1MDQkajQ0JGwwJGgw&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:19:11 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/all-personal/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Auto &amp; home bundle</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=auto,homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;AutoAndHomeQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto,homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto,homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:19:51 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/property/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:20:22 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/property/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Homeowners insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;HomeownersQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;input[type=\&quot;submit\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Enter your 5 or 9 digit ZIP Code&quot;,
+      &quot;errorType&quot;: &quot;missing-zip&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:21:05 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/property/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Condo insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;CondoQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;{\&quot;role\&quot;:\&quot;button\&quot;,\&quot;options\&quot;:{\&quot;name\&quot;:\&quot;Start your quote\&quot;}}&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: false,
+      &quot;message&quot;: &quot;No error message, no navigation, and no popup occurred&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:22:13 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/property/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Renters insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;RentersQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;54213&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;{\&quot;role\&quot;:\&quot;button\&quot;,\&quot;options\&quot;:{\&quot;name\&quot;:\&quot;Start your quote\&quot;}}&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: false,
+      &quot;message&quot;: &quot;No error message, no navigation, and no popup occurred&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:23:21 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/vehicle/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:23:51 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/vehicle/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Auto insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=auto&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;AutoQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;input[type=\&quot;submit\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Enter your 5 or 9 digit ZIP Code&quot;,
+      &quot;errorType&quot;: &quot;missing-zip&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:24:34 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/vehicle/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Classic car insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://www.hagerty.com/apps/manifold/Direct%20Quote/Location/Location/PostalCode?aff=explink&amp;ipds=999930123&amp;_gl=1*1gkwtqk*_gcl_au*MzkyNDA4MzkxLjE3ODI5NTE4MDU.*_ga*NTk5MTAwMzcwLjE3ODI5NTE4MDU.*_ga_GLJSQEPWL4*czE3ODI5NTE4MDUkbzEkZzEkdDE3ODI5NTE4NzUkajYwJGwwJGgw</td>
+              <td>new-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;ClassicCarQuoteForm&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;popup&quot;,
+  &quot;finalUrl&quot;: &quot;https://www.hagerty.com/apps/manifold/Direct%20Quote/Location/Location/PostalCode?aff=explink&amp;ipds=999930123&amp;_gl=1*1gkwtqk*_gcl_au*MzkyNDA4MzkxLjE3ODI5NTE4MDU.*_ga*NTk5MTAwMzcwLjE3ODI5NTE4MDU.*_ga_GLJSQEPWL4*czE3ODI5NTE4MDUkbzEkZzEkdDE3ODI5NTE4NzUkajYwJGwwJGgw&quot;,
+  &quot;redirectUrl&quot;: &quot;https://www.hagerty.com/apps/manifold/Direct%20Quote/Location/Location/PostalCode?aff=explink&amp;ipds=999930123&amp;_gl=1*1gkwtqk*_gcl_au*MzkyNDA4MzkxLjE3ODI5NTE4MDU.*_ga*NTk5MTAwMzcwLjE3ODI5NTE4MDU.*_ga_GLJSQEPWL4*czE3ODI5NTE4MDUkbzEkZzEkdDE3ODI5NTE4NzUkajYwJGwwJGgw&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: false,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:25:38 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/vehicle/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>RV insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://www.nationwide.com/personal/insurance/vehicle/</td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;RVQuoteForm&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;no-action&quot;,
+  &quot;finalUrl&quot;: &quot;https://www.nationwide.com/personal/insurance/vehicle/&quot;,
+  &quot;redirectUrl&quot;: &quot;https://www.nationwide.com/personal/insurance/vehicle/&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;phone-number-only&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:25:57 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/vehicle/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Auto &amp; home bundle</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=auto,homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;AutoAndHomeQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto,homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto,homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;{\&quot;role\&quot;:\&quot;button\&quot;,\&quot;options\&quot;:{\&quot;name\&quot;:\&quot;Start your quote\&quot;}}&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: false,
+      &quot;message&quot;: &quot;No error message, no navigation, and no popup occurred&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:27:01 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:27:32 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Local Agent</td>
+              <td><strong>ZIP validation</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;status&quot;: &quot;spa&quot;,
+  &quot;url&quot;: &quot;https://agency.nationwide.com/search?type=location&amp;q=43215&amp;_gl=1*19sy8ax*_gcl_au*MTQzMTA5MjI0Ni4xNzgyOTUyMDI2*_ga*Njg5MTYyODUyLjE3ODI5NTIwMjY.*_ga_GLJSQEPWL4*czE3ODI5NTIwMjYkbzEkZzEkdDE3ODI5NTIwNTckajI5JGwwJGgw&quot;,
+  &quot;message&quot;: &quot;SPA navigation to agency page&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:27:41 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Auto &amp; home bundle</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=auto,homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;personalAutoHomeBundle&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto,homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto,homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;input[type=\&quot;submit\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Enter your 5 or 9 digit ZIP Code&quot;,
+      &quot;errorType&quot;: &quot;missing-zip&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:29:26 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Business</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://www.nationwide.com/cp/biz-quote.html</td>
+              <td>new-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;Business&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;popup&quot;,
+  &quot;finalUrl&quot;: &quot;https://www.nationwide.com/cp/biz-quote.html&quot;,
+  &quot;redirectUrl&quot;: &quot;https://www.nationwide.com/cp/biz-quote.html&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: false,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:31:25 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Life</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://lifeessentials.nationwide.com/</td>
+              <td>new-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;Life&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;popup&quot;,
+  &quot;finalUrl&quot;: &quot;https://lifeessentials.nationwide.com/&quot;,
+  &quot;redirectUrl&quot;: &quot;https://lifeessentials.nationwide.com/&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: false,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:33:21 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Pet</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://qec3.petinsurance.com/quote1?OM=CI0438</td>
+              <td>new-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;Pet&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;popup&quot;,
+  &quot;finalUrl&quot;: &quot;https://qec3.petinsurance.com/quote1?OM=CI0438&quot;,
+  &quot;redirectUrl&quot;: &quot;https://qec3.petinsurance.com/quote1?OM=CI0438&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: false,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:35:17 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Auto</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=auto&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;personalAuto&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;input[type=\&quot;submit\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Enter your 5 or 9 digit ZIP Code&quot;,
+      &quot;errorType&quot;: &quot;missing-zip&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:37:01 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Homeowners</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;homeowners&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;input[type=\&quot;submit\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Enter your 5 or 9 digit ZIP Code&quot;,
+      &quot;errorType&quot;: &quot;missing-zip&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:38:47 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Renters</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;tenant&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;54213&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;input[type=\&quot;submit\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Enter your 5 or 9 digit ZIP Code&quot;,
+      &quot;errorType&quot;: &quot;missing-zip&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:40:33 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>See all insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://www.nationwide.com/personal/insurance/</td>
+              <td>new-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;All&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;popup&quot;,
+  &quot;finalUrl&quot;: &quot;https://www.nationwide.com/personal/insurance/&quot;,
+  &quot;redirectUrl&quot;: &quot;https://www.nationwide.com/personal/insurance/&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: true,
+  &quot;navigationSuccess&quot;: false,
+  &quot;buttonFoundBy&quot;: &quot;input[type=\&quot;submit\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:42:32 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Promo Quote</td>
+              <td><strong>Pay a personal bill</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://myservicing.nationwide.com/#/personal/quickpay/search</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;https://myservicing.nationwide.com/#/personal/quickpay/search&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://myservicing.nationwide.com/#/personal/quickpay/search&quot;,
+  &quot;redirectUrl&quot;: &quot;https://myservicing.nationwide.com/#/personal/quickpay/search&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;direct-url-navigation&quot;,
+  &quot;dropdownType&quot;: &quot;custom-tri-promo&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:45:51 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Promo Quote</td>
+              <td><strong>Pay a business bill</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://commercialservicing.nationwide.com/commercial/#/quickPay/search</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;https://commercialservicing.nationwide.com/commercial/#/quickPay/search&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://commercialservicing.nationwide.com/commercial/#/quickPay/search&quot;,
+  &quot;redirectUrl&quot;: &quot;https://commercialservicing.nationwide.com/commercial/#/quickPay/search&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;direct-url-navigation&quot;,
+  &quot;dropdownType&quot;: &quot;custom-tri-promo&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:49:13 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Promo Quote</td>
+              <td><strong>Get auto ID card</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://policyservicing.nationwide.com/#/qid/search</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;https://policyservicing.nationwide.com/#/qid/search&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://policyservicing.nationwide.com/#/qid/search&quot;,
+  &quot;redirectUrl&quot;: &quot;https://policyservicing.nationwide.com/#/qid/search&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;direct-url-navigation&quot;,
+  &quot;dropdownType&quot;: &quot;custom-tri-promo&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:52:34 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Promo Quote</td>
+              <td><strong>File a claim</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://www.nationwide.com/insurance-claims/</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;https://www.nationwide.com/insurance-claims/&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://www.nationwide.com/insurance-claims/&quot;,
+  &quot;redirectUrl&quot;: &quot;https://www.nationwide.com/insurance-claims/&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;direct-url-navigation&quot;,
+  &quot;dropdownType&quot;: &quot;custom-tri-promo&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:55:56 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Promo Quote</td>
+              <td><strong>Track a claim</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://claimsservicing.nationwide.com/claims/express-login</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;https://claimsselfservice.nationwide.com/claims/index.html#/express-login&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://claimsservicing.nationwide.com/claims/express-login&quot;,
+  &quot;redirectUrl&quot;: &quot;https://claimsservicing.nationwide.com/claims/express-login&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;direct-url-navigation&quot;,
+  &quot;dropdownType&quot;: &quot;custom-tri-promo&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 9:59:17 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/</span></td>
+              <td class="category-col">Promo Quote</td>
+              <td><strong>Access your retirement plan</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://login.nationwide.com/access/web/login.htm</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;https://login.nationwide.com/access/web/login.htm&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://login.nationwide.com/access/web/login.htm&quot;,
+  &quot;redirectUrl&quot;: &quot;https://login.nationwide.com/access/web/login.htm&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;direct-url-navigation&quot;,
+  &quot;dropdownType&quot;: &quot;custom-tri-promo&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:02:41 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/auto/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:03:10 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/auto/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Auto insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=auto&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;AutoQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;input[type=\&quot;submit\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: false,
+      &quot;message&quot;: &quot;No error message, no navigation, and no popup occurred&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:03:53 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/auto/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Classic car insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://www.hagerty.com/apps/manifold/Direct%20Quote/Location/Location/PostalCode?aff=explink&amp;ipds=999930123&amp;_gl=1*bcncop*_gcl_au*Mjc3MjQwNDc4LjE3ODI5NTQxNjQ.*_ga*MTI0MzQ3ODI0LjE3ODI5NTQxNjQ.*_ga_GLJSQEPWL4*czE3ODI5NTQxNjQkbzEkZzEkdDE3ODI5NTQyMzUkajU5JGwwJGgw</td>
+              <td>new-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;ClassicCarQuoteForm&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;popup&quot;,
+  &quot;finalUrl&quot;: &quot;https://www.hagerty.com/apps/manifold/Direct%20Quote/Location/Location/PostalCode?aff=explink&amp;ipds=999930123&amp;_gl=1*bcncop*_gcl_au*Mjc3MjQwNDc4LjE3ODI5NTQxNjQ.*_ga*MTI0MzQ3ODI0LjE3ODI5NTQxNjQ.*_ga_GLJSQEPWL4*czE3ODI5NTQxNjQkbzEkZzEkdDE3ODI5NTQyMzUkajU5JGwwJGgw&quot;,
+  &quot;redirectUrl&quot;: &quot;https://www.hagerty.com/apps/manifold/Direct%20Quote/Location/Location/PostalCode?aff=explink&amp;ipds=999930123&amp;_gl=1*bcncop*_gcl_au*Mjc3MjQwNDc4LjE3ODI5NTQxNjQ.*_ga*MTI0MzQ3ODI0LjE3ODI5NTQxNjQ.*_ga_GLJSQEPWL4*czE3ODI5NTQxNjQkbzEkZzEkdDE3ODI5NTQyMzUkajU5JGwwJGgw&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: false,
+  &quot;buttonFoundBy&quot;: &quot;unknown&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:05:04 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/auto/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>RV insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://www.nationwide.com/personal/insurance/auto/</td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;RVQuoteForm&quot;,
+  &quot;requiresZip&quot;: false,
+  &quot;zipCode&quot;: null,
+  &quot;outcome&quot;: &quot;no-action&quot;,
+  &quot;finalUrl&quot;: &quot;https://www.nationwide.com/personal/insurance/auto/&quot;,
+  &quot;redirectUrl&quot;: &quot;https://www.nationwide.com/personal/insurance/auto/&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;phone-number-only&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:05:23 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/auto/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Auto &amp; home bundle</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=auto,homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;AutoAndHomeQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto,homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=auto,homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;{\&quot;role\&quot;:\&quot;button\&quot;,\&quot;options\&quot;:{\&quot;name\&quot;:\&quot;Start your quote\&quot;}}&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: false,
+      &quot;message&quot;: &quot;No error message, no navigation, and no popup occurred&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:06:27 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/motorcycle/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: false,
+  &quot;status&quot;: &quot;not-applicable&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:06:58 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/snowmobile/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: false,
+  &quot;status&quot;: &quot;not-applicable&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:07:27 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/homeowners/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:07:57 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/homeowners/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Homeowners insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;HomeownersQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;input[type=\&quot;submit\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: false,
+      &quot;message&quot;: &quot;No error message, no navigation, and no popup occurred&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:08:40 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/homeowners/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Condo insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;CondoQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;{\&quot;role\&quot;:\&quot;button\&quot;,\&quot;options\&quot;:{\&quot;name\&quot;:\&quot;Start your quote\&quot;}}&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: false,
+      &quot;message&quot;: &quot;No error message, no navigation, and no popup occurred&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:09:46 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/homeowners/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Renters insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;RentersQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;54213&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;{\&quot;role\&quot;:\&quot;button\&quot;,\&quot;options\&quot;:{\&quot;name\&quot;:\&quot;Start your quote\&quot;}}&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: false,
+      &quot;message&quot;: &quot;No error message, no navigation, and no popup occurred&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:10:52 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/renters/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:11:23 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/renters/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Renters insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;RentersQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;54213&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;input[type=\&quot;submit\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Enter your 5 or 9 digit ZIP Code&quot;,
+      &quot;errorType&quot;: &quot;missing-zip&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:12:06 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/renters/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Homeowners insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;HomeownersQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;{\&quot;role\&quot;:\&quot;button\&quot;,\&quot;options\&quot;:{\&quot;name\&quot;:\&quot;Start your quote\&quot;}}&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: false,
+      &quot;message&quot;: &quot;No error message, no navigation, and no popup occurred&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:13:12 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/renters/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Condo insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;CondoQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;{\&quot;role\&quot;:\&quot;button\&quot;,\&quot;options\&quot;:{\&quot;name\&quot;:\&quot;Start your quote\&quot;}}&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: false,
+      &quot;message&quot;: &quot;No error message, no navigation, and no popup occurred&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:14:19 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/condo/</span></td>
+              <td class="category-col">Banner Check</td>
+              <td><strong>banner-level2-component-link-content</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td></td>
+              <td></td>
+              <td><pre class="details">{
+  &quot;present&quot;: true,
+  &quot;status&quot;: &quot;present&quot;
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:14:50 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/condo/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Condo insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;CondoQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=condo&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;input[type=\&quot;submit\&quot;]&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: true,
+      &quot;message&quot;: &quot;Enter your 5 or 9 digit ZIP Code&quot;,
+      &quot;errorType&quot;: &quot;missing-zip&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:15:33 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/condo/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Homeowners insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;HomeownersQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;43215&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=homeowners&amp;state=OH&amp;zipCode=43215&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;{\&quot;role\&quot;:\&quot;button\&quot;,\&quot;options\&quot;:{\&quot;name\&quot;:\&quot;Start your quote\&quot;}}&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: false,
+      &quot;message&quot;: &quot;No error message, no navigation, and no popup occurred&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:16:39 PM</td>
+            </tr>
+          
+            <tr class="success-row">
+              <td class="url-col"><span class="url-badge" style="background:transparent;padding:0;font-size:11px;">https://www.nationwide.com/personal/insurance/condo/</span></td>
+              <td class="category-col">Banner Quote</td>
+              <td><strong>Renters insurance</strong></td>
+              <td><span class="badge badge-pass">✅ PASS</span></td>
+              <td>https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct</td>
+              <td>same-window</td>
+              <td><pre class="details">{
+  &quot;optionValue&quot;: &quot;RentersQuoteForm&quot;,
+  &quot;requiresZip&quot;: true,
+  &quot;zipCode&quot;: &quot;54213&quot;,
+  &quot;outcome&quot;: &quot;same-tab&quot;,
+  &quot;finalUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct&quot;,
+  &quot;redirectUrl&quot;: &quot;https://getaquote.nationwide.com/quote/you/choose-products?products=tenant&amp;state=WI&amp;zipCode=54213&amp;utm_source=direct&quot;,
+  &quot;bannerPresent&quot;: false,
+  &quot;isSeeAllInsurance&quot;: false,
+  &quot;navigationSuccess&quot;: true,
+  &quot;buttonFoundBy&quot;: &quot;{\&quot;role\&quot;:\&quot;button\&quot;,\&quot;options\&quot;:{\&quot;name\&quot;:\&quot;Start your quote\&quot;}}&quot;,
+  &quot;dropdownType&quot;: &quot;banner&quot;,
+  &quot;negativeTests&quot;: [
+    {
+      &quot;scenario&quot;: &quot;no-zip&quot;,
+      &quot;success&quot;: false,
+      &quot;message&quot;: &quot;No error message, no navigation, and no popup occurred&quot;
+    }
+  ]
+}</pre></td>
+              <td style="font-size:11px;color:#5a6a7a;">7/1/2026, 10:17:49 PM</td>
+            </tr>
+          
+        </tbody>
+      </table>
+    </div>
+    
+
+    <div class="footer">
+      <div>
+        <strong>Quote Dropdown Validator</strong>
+        <span style="margin:0 8px;color:#d0d7dd;">|</span>
+        Version 2.0
+        <span style="margin-left:8px;">💻 Desktop</span>
+      </div>
+      <div>
+        Total: 100 checks · 
+        <span style="color:#0b7e4b;">96 passed</span> · 
+        <span style="color:#c72a2a;">4 failed</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
