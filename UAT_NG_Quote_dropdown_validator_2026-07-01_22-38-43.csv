@@ -1,0 +1,11 @@
+Validation URL,Category,Target,Status,Redirect URL,Target Window,Details,Timestamp
+https://uat-ng.nationwide.com/personal/insurance/all-personal/,Banner Check,banner-level2-component-link-content,PASS,,,"{""present"":false;""status"":""not-applicable""}",2026-07-02T01:39:14.176Z
+
+SUMMARY
+Total Checks,1
+Passed,1
+Failed,0
+Success Rate,100%
+URLs Tested,https://uat-ng.nationwide.com/personal/insurance/all-personal/
+Device,Desktop
+Generated,7/1/2026, 10:39:15 PM
