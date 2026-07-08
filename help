@@ -1,0 +1,5 @@
+npm install selenium-webdriver
+  npm init -y
+  npm install -g edgedriver   # for Edge
+# or
+npm install -g chromedriver # for Chrome
