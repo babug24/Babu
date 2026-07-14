@@ -1,16 +1,16 @@
 {
-  "dependencies": {
-    "selenium-webdriver": "^4.45.0"
-  },
-  "name": "nw_error_validator",
+  "name": "nw_interstellar_mop_font_finder",
   "version": "1.0.0",
   "description": "",
-  "main": "error_validator.js",
-  "devDependencies": {},
+  "main": "font_style_checker.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "csv-parser": "^3.2.1",
+    "puppeteer": "^25.3.0"
+  }
 }
