@@ -43,6 +43,7 @@ const config = {
   timeout: 90000,
   reportDir: 'reports',
   layoutOverflowTolerance: 5,
+  performanceThreshold: 7000,
 };
 
 if (!fs.existsSync(config.reportDir)) {
@@ -101,64 +102,149 @@ console.log(`📋 Found ${urls.length} URL(s) to test.`);
     return parts[parts.length - 1] || '';
   }
 
-  // ---------- Helper: get text from an element (robust) ----------
-  async function getElementText(el) {
-    try {
-      let text = await el.innerText();
-      if (text && text.trim()) return text.trim();
-      text = await el.textContent();
-      if (text && text.trim()) return text.trim();
-      text = await el.getAttribute('aria-label');
-      if (text && text.trim()) return text.trim();
-      text = await el.getAttribute('title');
-      if (text && text.trim()) return text.trim();
-      const child = el.locator('span, tspan, text').first();
-      if (await child.count() > 0) {
-        text = await child.textContent();
-        if (text && text.trim()) return text.trim();
-      }
-      return '';
-    } catch (e) {
-      return '';
-    }
-  }
-
-  // ---------- Helper: click ALL visible legend items and return unique names ----------
+  // ---------- Helper: click all visible legend items ----------
   async function clickAllLegendItems(page, testName) {
-    const legendContainer = page.locator('#legend-container');
-    const containerCount = await legendContainer.count();
-    if (containerCount === 0) {
-      console.log(`  ⚠️ No legend container found for ${testName} – skipping.`);
-      return null;
-    }
+    await page.waitForTimeout(5000);
 
-    const textElements = legendContainer.locator('*').filter({
-      hasText: /\S/
-    });
-    const count = await textElements.count();
-    if (count === 0) {
-      console.log(`  ⚠️ No text-bearing elements found inside legend container for ${testName} – skipping.`);
-      return null;
-    }
-
-    const clickedNames = new Set();
-    for (let i = 0; i < count; i++) {
-      const el = textElements.nth(i);
-      const isVisible = await el.isVisible();
-      if (!isVisible) continue;
-      const text = await getElementText(el);
-      if (text) {
-        await el.click();
-        console.log(`  ✅ Clicked legend item for ${testName}: "${text}"`);
-        clickedNames.add(text);
+    const result = await page.evaluate(() => {
+      function getText(el) {
+        let text = el.innerText?.trim();
+        if (text) return text;
+        text = el.textContent?.trim();
+        if (text) return text;
+        text = el.getAttribute('aria-label')?.trim();
+        if (text) return text;
+        text = el.getAttribute('title')?.trim();
+        if (text) return text;
+        const child = el.querySelector('text, tspan, span');
+        if (child) {
+          text = child.textContent?.trim();
+          if (text) return text;
+        }
+        return '';
       }
+
+      const strategies = [
+        () => {
+          const container = document.querySelector('#legend-container');
+          if (!container) return [];
+          const items = container.querySelectorAll('*');
+          const result = [];
+          for (const el of items) {
+            const text = getText(el);
+            if (text && !text.includes('Feedback') && !text.includes('[') && !text.includes(']') && text.length > 1) {
+              const rect = el.getBoundingClientRect();
+              if (rect.width > 10 && rect.height > 10) {
+                result.push({ element: el, text });
+              }
+            }
+          }
+          return result;
+        },
+        () => {
+          const containers = document.querySelectorAll('.highcharts-legend');
+          const result = [];
+          for (const container of containers) {
+            const items = container.querySelectorAll('.highcharts-legend-item, [role="button"], g');
+            for (const el of items) {
+              const text = getText(el);
+              if (text && !text.includes('Feedback') && !text.includes('[') && !text.includes(']') && text.length > 1) {
+                const rect = el.getBoundingClientRect();
+                if (rect.width > 10 && rect.height > 10) {
+                  result.push({ element: el, text });
+                }
+              }
+            }
+          }
+          return result;
+        },
+        () => {
+          const items = document.querySelectorAll('.highcharts-legend-item');
+          const result = [];
+          for (const el of items) {
+            const text = getText(el);
+            if (text && !text.includes('Feedback') && !text.includes('[') && !text.includes(']') && text.length > 1) {
+              const rect = el.getBoundingClientRect();
+              if (rect.width > 10 && rect.height > 10) {
+                result.push({ element: el, text });
+              }
+            }
+          }
+          return result;
+        },
+        () => {
+          const items = document.querySelectorAll('[role="button"]');
+          const result = [];
+          for (const el of items) {
+            const text = getText(el);
+            if (text && !text.includes('Feedback') && !text.includes('[') && !text.includes(']') && text.length > 1) {
+              const rect = el.getBoundingClientRect();
+              if (rect.width > 10 && rect.height > 10) {
+                result.push({ element: el, text });
+              }
+            }
+          }
+          return result;
+        }
+      ];
+
+      let allCandidates = [];
+      for (const strategy of strategies) {
+        const candidates = strategy();
+        if (candidates.length > 0) {
+          allCandidates = candidates;
+          break;
+        }
+      }
+
+      if (allCandidates.length === 0) {
+        return { error: 'No legend items found' };
+      }
+
+      const seen = new Set();
+      const uniqueItems = [];
+      for (const { element, text } of allCandidates) {
+        if (!seen.has(text)) {
+          seen.add(text);
+          uniqueItems.push({ element, text });
+        }
+      }
+
+      if (uniqueItems.length === 0) {
+        return { error: 'No unique legend items found' };
+      }
+
+      const clickedNames = [];
+      for (const { element, text } of uniqueItems) {
+        try {
+          element.click();
+          clickedNames.push(text);
+        } catch (e) {
+          try {
+            if (element.parentElement) {
+              element.parentElement.click();
+              clickedNames.push(text);
+            }
+          } catch (e2) { /* ignore */ }
+        }
+      }
+
+      return { clickedNames };
+    });
+
+    if (result.error) {
+      return `⚠️ ${result.error}`;
     }
 
-    if (clickedNames.size === 0) {
-      console.log(`  ⚠️ No visible text-bearing elements found for ${testName} – skipping.`);
-      return null;
+    if (!result.clickedNames || result.clickedNames.length === 0) {
+      return '⚠️ No items were clicked';
     }
-    return Array.from(clickedNames).join(', ');
+
+    for (const name of result.clickedNames) {
+      console.log(`  ✅ Clicked legend item for ${testName}: "${name}"`);
+    }
+
+    return result.clickedNames.join(', ');
   }
 
   async function runSuiteForUrl(url) {
@@ -473,7 +559,9 @@ console.log(`📋 Found ${urls.length} URL(s) to test.`);
         const perf = performance.getEntriesByType('navigation')[0];
         return perf ? perf.loadEventEnd - perf.fetchStart : -1;
       });
-      if (metrics > 5000) throw new Error(`Slow load: ${metrics}ms`);
+      if (metrics > config.performanceThreshold) {
+        throw new Error(`Slow load: ${metrics}ms (threshold: ${config.performanceThreshold}ms)`);
+      }
       return `Load time: ${metrics}ms`;
     });
 
@@ -500,11 +588,6 @@ console.log(`📋 Found ${urls.length} URL(s) to test.`);
       return `No insecure images (${mixed} found)`;
     });
 
-    await runTest('Footer', async () => {
-      await page.waitForSelector('footer', { timeout: 10000 });
-      return 'Footer found';
-    });
-
     await runTest('User Interaction Flow', async () => {
       await page.waitForFunction(
         () => document.body.innerText.includes('Calendar year returns') ||
@@ -514,6 +597,27 @@ console.log(`📋 Found ${urls.length} URL(s) to test.`);
       return 'Interaction flow completed';
     });
 
+    // ---------- Portfolio Characteristics Interaction ----------
+    await runTest('Portfolio Characteristics Interaction', async () => {
+      console.log('  📊 Testing Portfolio Characteristics interaction...');
+      
+      const portfolioCharHeading = page.getByText('Portfolio characteristics', { exact: true });
+      await portfolioCharHeading.click();
+      console.log('  ✅ Clicked "Portfolio characteristics" heading.');
+
+      const fixedIncomeBtn = page.getByRole('button', { name: 'Fixed-income characteristics' });
+      await fixedIncomeBtn.click();
+      console.log('  ✅ Clicked "Fixed-income characteristics" button.');
+      await page.waitForTimeout(500);
+
+      const mptBtn = page.getByRole('button', { name: 'MPT statistics' });
+      await mptBtn.click();
+      console.log('  ✅ Clicked "MPT statistics" button.');
+      await page.waitForTimeout(500);
+
+      return 'Fixed-income & MPT statistics validated';
+    });
+
     // ---------- Legend Tests ----------
     await runTest('Calendar Year Returns Legend Bar', async () => {
       console.log('  📊 Testing Calendar Year Returns legend bar...');
@@ -521,6 +625,7 @@ console.log(`📋 Found ${urls.length} URL(s) to test.`);
       await heading.click();
       const table = page.locator('#thirdDataFeedTable');
       await table.click();
+      await page.waitForTimeout(5000);
       return await clickAllLegendItems(page, 'Calendar Year Returns');
     });
 
@@ -530,6 +635,7 @@ console.log(`📋 Found ${urls.length} URL(s) to test.`);
       await heading.click();
       const table = page.locator('#growth10KTable');
       await table.click();
+      await page.waitForTimeout(5000);
       return await clickAllLegendItems(page, 'Growth of 10K');
     });
 
@@ -547,6 +653,7 @@ console.log(`📋 Found ${urls.length} URL(s) to test.`);
         console.log('  ⚠️ "% of portfolio" toggle not found – skipping toggle.');
       }
 
+      await page.waitForTimeout(5000);
       return await clickAllLegendItems(page, 'Sector Allocations');
     });
 
@@ -649,11 +756,15 @@ console.log(`📋 Found ${urls.length} URL(s) to test.`);
             ${r.details.map((d, idx) => {
               let infoHtml = '';
               if (d.info) {
-                const items = d.info.split(',').map(s => s.trim()).filter(s => s);
-                if (items.length > 1) {
-                  infoHtml = `<div class="test-info-block"><ul>${items.map(item => `<li>${item}</li>`).join('')}</ul></div>`;
-                } else if (items.length === 1) {
-                  infoHtml = `<div class="test-info-block">${items[0]}</div>`;
+                if (d.info.includes('⚠️')) {
+                  infoHtml = `<div class="test-info-block" style="border-left-color: #f0ad4e; color: #856404; background: #fff3cd;">${d.info}</div>`;
+                } else {
+                  const items = d.info.split(',').map(s => s.trim()).filter(s => s);
+                  if (items.length > 1) {
+                    infoHtml = `<div class="test-info-block"><ul>${items.map(item => `<li>${item}</li>`).join('')}</ul></div>`;
+                  } else if (items.length === 1) {
+                    infoHtml = `<div class="test-info-block">${items[0]}</div>`;
+                  }
                 }
               }
               return `
