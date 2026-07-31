@@ -1,0 +1,95 @@
+https://api-int.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWALX
+
+{
+    "asOfDate": "06/30/2026",
+    "fundName": "Nationwide BNY Mellon Dynamic US Equity Income Fund",
+    "ticker": "NWALX",
+    "actual12b1": 0.25,
+    "actualmanagementfee": 0.6,
+    "annlRptDt": "10/31/2025",
+    "annlRptNetExpnsRt": "0.930000",
+    "benchMarkName": "Russell 1000 Value",
+    "benchmarks": [
+        {
+            "bmarkId": "XIUSA000KP",
+            "bmarkName": "Russell 1000 Value",
+            "bmarkType": "focus",
+            "bmarkWeightingQt": 100.0
+        },
+        {
+            "bmarkId": "XIUSA000KP",
+            "bmarkName": "Russell 1000 Value",
+            "bmarkType": "secondary",
+            "bmarkWeightingQt": 100.0
+        },
+        {
+            "bmarkId": "XIUSA000O4",
+            "bmarkName": "Russell 1000",
+            "bmarkType": "primary",
+            "bmarkWeightingQt": 100.0
+        }
+    ],
+    "brandingNm": "Nationwide",
+    "currentBnchmrkId": "XIUSA000KP",
+    "currentShareClassId": "F000013RMP",
+    "cusip": "63868D811",
+    "expenseRatioGross": 1.19,
+    "expenseRatioNet": 1.1,
+    "expnsWaiverCapNoteTx": "Nationwide Mutual Funds (the Trust) and Nationwide Fund Advisors (the Adviser) have entered into a written contract limiting annual fund operating expenses to 0.60% until at least March 2, 2027 . Under the expense limitation agreement, the level to which operating expenses are limited applies to all share classes, excluding any taxes, interest, compensation payable to parties not affiliated with the Adviser for the recovery of tax reclaims, brokerage commissions, Rule 12b-1 fees, acquired fund fees and expenses, short-sale dividend expenses, administrative services fees, other expenses which are capitalized in accordance with generally accepted accounting principles and expenses incurred by the Fund in connection with any merger or reorganization, and may exclude other nonroutine expenses not incurred in the ordinary course of the Funds business. The expense limitation agreement may be changed or eliminated only with the consent of the Board of Trustees of the Trust.",
+    "fundFamilyNm": "Nationwide",
+    "fundOfFundIn": "false",
+    "fundPrtflId": "FSUSA001DF",
+    "inceptionDate": "12/31/1987",
+    "initialInvstAm": "2000.000000",
+    "isinNb": "US63868D8112",
+    "legalStructureDsc": "Open Ended Investment Company",
+    "maxAdmnsvFeeAm": 0.25,
+    "minInvstDt": "02/28/2022",
+    "minimumInvestmentAmount": 2000,
+    "morningstarCategory": "Large Value",
+    "morningstarFundNm": "Nationwide BNY Mellon Dyn US Eq Inc A",
+    "morningstarOutOfFunds": 1054,
+    "morningstarRating": 5,
+    "mstarCtgryId": "$FOCA$LV$$",
+    "mstarCtgryUsAssetClassNm": "U.S. Equity",
+    "mstarPrspctsObjctvId": "GI",
+    "mstarPrspctsObjctvNm": "Growth and Income",
+    "netAssets": "940753013.000000",
+    "oldestShareClassId": "FOUSA00DEH",
+    "oldestShareClassNm": "Nationwide BNY Mellon Dyn US Eq Inc K",
+    "principalInvstObjctvTx": "The investment seeks total return, consisting of capital appreciation and/or income.",
+    "prospectusDate": "03/02/2026",
+    "recordHashKey": "2b301d434cc47b9cc497fd8af31668a5",
+    "relatedFunds": [
+        {
+            "shareClass": "A",
+            "ticker": "NWALX"
+        },
+        {
+            "shareClass": "Eagle",
+            "ticker": "NWAPX"
+        },
+        {
+            "shareClass": "Institutional Service",
+            "ticker": "NWAOX"
+        },
+        {
+            "shareClass": "K",
+            "ticker": "NWAMX"
+        },
+        {
+            "shareClass": "R6",
+            "ticker": "NWANX"
+        }
+    ],
+    "shareClass": "A",
+    "shareClassNetAssetAm": "4769150.000000",
+    "shareClassNetAssetEndDt": "06/30/2026",
+    "shareClassTp": "A",
+    "shareClassTpId": "1",
+    "srcFundId": "F000013RMP",
+    "srcUniverseCd": "FO",
+    "turnoverRtAm": 8.73,
+    "turnoverRtDt": "10/31/2025",
+    "version": "FPA VERSION 1.5.2 - Springboot Upgrade 4.1.0 #1"
+}
