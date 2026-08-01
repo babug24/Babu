@@ -1,0 +1,391 @@
+fund-validation/
+├── validateFund.js          # Main script (see below)
+├── test-config.json         # Your configuration (example provided)
+├── screenshots/             # Created automatically
+└── reports/                 # Created automatically
+
+test-config.json
+[
+  {
+    "fundCode": "NWALX",
+    "apiUrl": "https://api-int.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWALX",
+    "pageUrl": "https://www.nationwide.com/financial-professionals/products/investments/mutual-funds/fund-list/profile/NWHJX",
+    "fields": [
+      {
+        "label": "Fund Name",
+        "apiField": "fundName",
+        "selector": "[data-testid='fund-name']",
+        "normalize": "trim"
+      },
+      {
+        "label": "Ticker",
+        "apiField": "ticker",
+        "selector": "[data-testid='ticker']",
+        "normalize": "trim"
+      },
+      {
+        "label": "Expense Ratio",
+        "apiField": "expenseRatioNet",
+        "selector": "[data-testid='expense-ratio']",
+        "normalize": "percent"
+      },
+      {
+        "label": "Net Assets",
+        "apiField": "netAssets",
+        "selector": "[data-testid='net-assets']",
+        "normalize": "currency"
+      },
+      {
+        "label": "Inception Date",
+        "apiField": "inceptionDate",
+        "selector": "[data-testid='inception-date']",
+        "normalize": "date"
+      }
+    ]
+  }
+]
+
+2. validateFund.js (Complete Script)
+#!/usr/bin/env node
+
+/**
+ * Fund API vs UI Validation Script
+ * ---------------------------------
+ * Reads a configuration file (JSON) with a list of funds, each specifying
+ * the API URL, page URL, and the fields to validate.
+ * For each fund, it fetches the API data, extracts UI values using selectors,
+ * normalises both sides, compares them, and generates a detailed report.
+ */
+
+const { chromium } = require('playwright');
+const fs = require('fs');
+const path = require('path');
+
+// ============================================================
+// 1. NORMALIZATION FUNCTIONS (built-in)
+// ============================================================
+
+const NORMALIZERS = {
+  // Simple trim
+  trim: (val) => (val ?? '').toString().trim(),
+
+  // Percentage: remove '%', parse to number, format to 2 decimals
+  percent: (val) => {
+    if (typeof val === 'string') {
+      val = val.replace(/%/g, '').trim();
+    }
+    const num = parseFloat(val);
+    return isNaN(num) ? '' : num.toFixed(2);
+  },
+
+  // Currency: remove '$', commas, parse number, return as string with no decimals
+  currency: (val) => {
+    if (typeof val === 'string') {
+      // Handle suffixes like K, M, B (e.g., "$940.8M")
+      const clean = val.replace(/[$,\s]/g, '').trim();
+      const match = clean.match(/^([\d.]+)\s*([KMB]?)$/i);
+      if (match) {
+        let num = parseFloat(match[1]);
+        const suffix = match[2].toUpperCase();
+        if (suffix === 'K') num *= 1e3;
+        else if (suffix === 'M') num *= 1e6;
+        else if (suffix === 'B') num *= 1e9;
+        return num.toFixed(0);
+      }
+      return clean;
+    }
+    // API raw number
+    const num = parseFloat(val);
+    return isNaN(num) ? '' : num.toFixed(0);
+  },
+
+  // Date: try to parse and format as YYYY-MM-DD (or just trim)
+  date: (val) => {
+    if (typeof val === 'string') {
+      // Attempt to parse common date formats
+      const trimmed = val.trim();
+      // If it looks like a date with slashes, try to standardize
+      // For simplicity, we just trim and return as-is – you can enhance this
+      return trimmed;
+    }
+    return (val ?? '').toString().trim();
+  },
+
+  // Number: parse float, keep as string with 2 decimals (or as-is)
+  number: (val) => {
+    const num = parseFloat(val);
+    return isNaN(num) ? '' : num.toString();
+  }
+};
+
+// ============================================================
+// 2. HELPERS
+// ============================================================
+
+/**
+ * Load configuration from JSON file.
+ */
+function loadConfig(filePath) {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Config file not found: ${filePath}`);
+  }
+  const raw = fs.readFileSync(filePath, 'utf8');
+  return JSON.parse(raw);
+}
+
+/**
+ * Ensure a directory exists; create if not.
+ */
+function ensureDir(dir) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+/**
+ * Fetch API data with timeout.
+ */
+async function fetchApiData(apiUrl, timeout = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(apiUrl, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timer);
+    throw new Error(`API request failed: ${error.message}`);
+  }
+}
+
+/**
+ * Extract UI value using a selector.
+ */
+async function getUiValue(page, selector, timeout = 5000) {
+  try {
+    const element = await page.locator(selector).first();
+    await element.waitFor({ state: 'visible', timeout });
+    const text = await element.textContent();
+    return (text || '').trim();
+  } catch (error) {
+    console.warn(`  ⚠️ Could not read selector "${selector}" – ${error.message}`);
+    return '';
+  }
+}
+
+/**
+ * Apply normalization based on type.
+ */
+function normalizeValue(value, type) {
+  const normalizer = NORMALIZERS[type] || NORMALIZERS.trim;
+  return normalizer(value);
+}
+
+// ============================================================
+// 3. MAIN VALIDATION FUNCTION
+// ============================================================
+
+/**
+ * Validate a single fund configuration.
+ */
+async function validateFund(config, browser) {
+  const { fundCode, apiUrl, pageUrl, fields } = config;
+
+  console.log(`\n🔍 Validating fund: ${fundCode}`);
+  console.log(`   API : ${apiUrl}`);
+  console.log(`   Page: ${pageUrl}`);
+
+  const report = {
+    fundCode,
+    apiUrl,
+    pageUrl,
+    timestamp: new Date().toISOString(),
+    passed: false,
+    fields: [],
+    errors: [],
+    screenshotPath: null
+  };
+
+  // --- Step 1: Fetch API data ---
+  let apiData;
+  try {
+    apiData = await fetchApiData(apiUrl);
+  } catch (error) {
+    const msg = `API error: ${error.message}`;
+    report.errors.push(msg);
+    console.error(`  ❌ ${msg}`);
+    return report;
+  }
+
+  // --- Step 2: Open page ---
+  const page = await browser.newPage();
+  try {
+    await page.goto(pageUrl, { waitUntil: 'networkidle' });
+    // Wait for the main container (adjust if needed)
+    // We'll wait for the first field's selector to be visible as a sanity check
+    if (fields.length > 0) {
+      const firstSelector = fields[0].selector;
+      await page.locator(firstSelector).first().waitFor({ state: 'visible', timeout: 10000 });
+    }
+  } catch (error) {
+    const msg = `Page navigation error: ${error.message}`;
+    report.errors.push(msg);
+    console.error(`  ❌ ${msg}`);
+    await page.close();
+    return report;
+  }
+
+  // --- Step 3: Validate each field ---
+  let allPassed = true;
+
+  for (const field of fields) {
+    const { label, apiField, selector, normalize = 'trim' } = field;
+
+    // Get raw values
+    const apiRaw = apiData[apiField];
+    const uiRaw = await getUiValue(page, selector);
+
+    // Normalize
+    const apiNorm = normalizeValue(apiRaw, normalize);
+    const uiNorm = normalizeValue(uiRaw, normalize);
+
+    const passed = apiNorm === uiNorm;
+    if (!passed) allPassed = false;
+
+    const result = {
+      label,
+      apiField,
+      selector,
+      normalize: normalize,
+      apiRaw,
+      uiRaw,
+      apiNorm,
+      uiNorm,
+      passed
+    };
+    report.fields.push(result);
+
+    // Log
+    const status = passed ? '✅' : '❌';
+    console.log(`  ${status} ${label}`);
+    if (!passed) {
+      console.log(`     Expected: ${apiNorm} (raw: ${apiRaw})`);
+      console.log(`     Actual  : ${uiNorm} (raw: ${uiRaw})`);
+    }
+  }
+
+  // --- Step 4: Screenshot on failure ---
+  if (!allPassed) {
+    const screenshotDir = path.join(__dirname, 'screenshots');
+    ensureDir(screenshotDir);
+    const filename = `${fundCode}_${Date.now()}.png`;
+    const screenshotPath = path.join(screenshotDir, filename);
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    report.screenshotPath = screenshotPath;
+    console.log(`  📸 Screenshot saved: ${screenshotPath}`);
+  }
+
+  await page.close();
+
+  report.passed = allPassed;
+  const total = report.fields.length;
+  const passedCount = report.fields.filter(f => f.passed).length;
+  const failedCount = total - passedCount;
+  console.log(`  Summary: ${passedCount}/${total} passed, ${failedCount} failed`);
+
+  return report;
+}
+
+// ============================================================
+// 4. RUNNER
+// ============================================================
+
+async function run() {
+  // Command-line arguments: config file path, optional report path
+  const args = process.argv.slice(2);
+  const configPath = args[0] || path.join(__dirname, 'test-config.json');
+  const reportPath = args[1] || path.join(__dirname, 'reports', 'validation-report.json');
+
+  console.log('========================================');
+  console.log(' Fund API vs UI Validation');
+  console.log('========================================');
+  console.log(`Config: ${configPath}`);
+  console.log(`Report: ${reportPath}`);
+
+  // Load config
+  let configs;
+  try {
+    configs = loadConfig(configPath);
+  } catch (error) {
+    console.error(`❌ Failed to load config: ${error.message}`);
+    process.exit(1);
+  }
+
+  if (!Array.isArray(configs) || configs.length === 0) {
+    console.error('❌ Config must be a non-empty array of fund objects.');
+    process.exit(1);
+  }
+
+  console.log(`\nLoaded ${configs.length} fund(s) to validate.`);
+
+  // Launch browser once
+  const browser = await chromium.launch({ headless: false }); // set to true for CI
+
+  const allReports = [];
+  for (const config of configs) {
+    // Ensure required fields exist
+    if (!config.fundCode || !config.apiUrl || !config.pageUrl || !Array.isArray(config.fields)) {
+      console.error(`⚠️ Skipping invalid config: missing required fields.`, config);
+      continue;
+    }
+    const report = await validateFund(config, browser);
+    allReports.push(report);
+  }
+
+  await browser.close();
+
+  // Summary
+  const totalFunds = allReports.length;
+  const passedFunds = allReports.filter(r => r.passed).length;
+  const failedFunds = totalFunds - passedFunds;
+
+  console.log('\n\n========== FINAL SUMMARY ==========');
+  console.log(`Funds tested : ${totalFunds}`);
+  console.log(`Passed       : ${passedFunds}`);
+  console.log(`Failed       : ${failedFunds}`);
+  console.log('=====================================\n');
+
+  // Write JSON report
+  const reportData = {
+    timestamp: new Date().toISOString(),
+    totalFunds,
+    passedFunds,
+    failedFunds,
+    reports: allReports
+  };
+  ensureDir(path.dirname(reportPath));
+  fs.writeFileSync(reportPath, JSON.stringify(reportData, null, 2), 'utf8');
+  console.log(`📄 Report saved: ${reportPath}`);
+
+  // Exit with non-zero code if any failure (for CI)
+  process.exit(failedFunds > 0 ? 1 : 0);
+}
+
+// ============================================================
+// 5. EXECUTE
+// ============================================================
+
+if (require.main === module) {
+  run().catch((error) => {
+    console.error('Unhandled error:', error);
+    process.exit(1);
+  });
+}
+
+module.exports = { validateFund, loadConfig };
+
+
+
