@@ -1,0 +1,146 @@
+[
+  {
+    "tickerCsv": "ticker.csv",
+    "csvColumn": "fundCode",
+    "apiUrl": "https://api-int.nwie.net/funds-and-assets-management/fund-profile/v1/funds/${fundCode}",
+    "apiHeaders": {
+      "client_id": "kC3lf2PwHUCH49fWloG4hhoDt0iGmtOZ",
+      "X-NW-Message-ID": "headerMsgId"
+    },
+    "apiTls": {
+      "allowSelfSigned": true
+    },
+    "pageLoad": {
+      "waitUntil": "domcontentloaded",
+      "timeoutMs": 90000
+    },
+    "pageUrls": [
+      "https://it.nwdotcom-ng.apps.nwie.net/financial-professionals/products/investments/mutual-funds/fund-list/profile/${fundCode}",
+      "https://nationwide.com/financial-professionals/products/investments/mutual-funds/fund-list/profile/${fundCode}"
+    ],
+    "pageUrl": "https://it.nwdotcom-ng.apps.nwie.net/financial-professionals/products/investments/mutual-funds/fund-list/profile/${fundCode}",
+    "uiChecks": [
+      {
+        "label": "Fund Highlights Section (legacy class)",
+        "selector": ".fund-highlights-title-container",
+        "expectedText": "Fund Highlights",
+        "matchType": "contains",
+        "required": false
+      },
+      {
+        "label": "Fund Header Loaded",
+        "selector": "xpath=//*[normalize-space()='CUSIP']",
+        "required": true
+      }
+    ],
+    "fields": [
+      {
+        "label": "Fund Name",
+        "apiField": "fundName",
+        "selector": "#p85400 > section > div > ngx-nationwide-fund-highlights > div > div.fund-highlights-title-container > h1",
+        "normalize": "trim"
+      },
+      {
+        "label": "Share class (Ticker)",
+        "apiField": "ticker",
+        "selector": "body",
+        "uiSource": "pageTitle",
+        "uiRegex": "\\b(${fundCode})\\b",
+        "normalize": "trim"
+      },
+      {
+        "label": "CUSIP",
+        "apiField": "cusip",
+        "selector": "xpath=//*[normalize-space()='CUSIP']/following::*[normalize-space()][1]",
+        "normalize": "trim"
+      },
+      {
+        "label": "Oldest share class inception date",
+        "apiField": "inceptionDate",
+        "selector": "xpath=//*[normalize-space()='Oldest share class inception date']/following::*[normalize-space()][1]",
+        "normalize": "date"
+      },
+      {
+        "label": "Morningstar Category",
+        "apiField": "morningstarCategory",
+        "selector": "xpath=//*[normalize-space()='Category:']/following::*[normalize-space()][1]",
+        "normalize": "trim"
+      },
+      {
+        "label": "Benchmark Primary",
+        "apiField": {
+          "type": "arrayFind",
+          "source": "benchmarks",
+          "where": {
+            "field": "bmarkType",
+            "equals": "primary"
+          },
+          "pick": "bmarkName"
+        },
+        "selector": "xpath=//*[contains(normalize-space(),'Primary:')]/following::*[normalize-space()][1]",
+        "normalize": "trim"
+      },
+      {
+        "label": "Expense Ratio Gross",
+        "apiField": "expenseRatioGross",
+        "selector": "body",
+        "uiSource": "pageText",
+        "uiRegex": "Gross:\\s*([0-9.]+%)",
+        "normalize": "percent"
+      },
+      {
+        "label": "Expense Ratio Net",
+        "apiField": "expenseRatioNet",
+        "selector": "body",
+        "uiSource": "pageText",
+        "uiRegex": "Net:\\s*([0-9.]+%)",
+        "normalize": "percent"
+      },
+      {
+        "label": "Overall rating out of funds",
+        "apiField": "morningstarOutOfFunds",
+        "selector": "body",
+        "uiSource": "pageText",
+        "uiRegex": "out of\\s*(\\d+)\\s*funds",
+        "normalize": "number"
+      },
+      {
+        "label": "Morningstar Rating Stars",
+        "apiField": "morningstarRating",
+        "selector": ".rating-stars",
+        "uiExtract": "count",
+        "countSelector": "bolt-icon[name='star-filled']",
+        "normalize": "number"
+      },
+      {
+        "label": "Benchmark Secondary",
+        "apiField": {
+          "type": "arrayFind",
+          "source": "benchmarks",
+          "where": {
+            "field": "bmarkType",
+            "equals": "secondary"
+          },
+          "pick": "bmarkName"
+        },
+        "selector": "xpath=//*[contains(normalize-space(),'Secondary:')]/following::*[normalize-space()][1]",
+        "normalize": "trim"
+      },
+      {
+        "label": "Total net assets",
+        "apiField": "netAssets",
+        "selector": "body",
+        "uiSource": "pageText",
+        "uiRegex": "Total net assets\\s*(\\$[0-9.,]+(?:\\s*(?:million|billion|thousand|[KMB]))?)",
+        "normalize": "currency",
+        "compareMode": "currencyRoundedMillion1dp"
+      },
+      {
+        "label": "Minimum investment",
+        "apiField": "minimumInvestmentAmount",
+        "selector": "xpath=//*[normalize-space()='Minimum investment']/following::*[normalize-space()][1]",
+        "normalize": "currency"
+      }
+    ]
+  }
+]
