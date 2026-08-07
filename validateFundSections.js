@@ -5,10 +5,11 @@ const { chromium } = require('playwright');
 
 // ========================== CONFIGURATION ==========================
 const BASE_URL = 'https://www.nationwide.com/financial-professionals/products/investments/mutual-funds/fund-list/profile/';
-const INPUT_CANDIDATES = ['input.xlsx', 'input.csv'];
+const INPUT_CANDIDATES = ['input.xlsx', 'input.csv', 'HTML.txt', 'input.html', 'input.htm'];
 const OUTPUT_DIR = 'report';
-const OUTPUT_FILE = path.join(OUTPUT_DIR, 'FundSectionValidation.xlsx');
+const OUTPUT_FILE_BASE = 'FundSectionAvailability';
 const TIMEOUT = 30000; // 30 seconds per page
+const UNAVAILABLE_MESSAGE = 'we apologize, fund performance is temporarily unavailable';
 
 // ========================== SECTIONS TO CHECK ==========================
 const sections = [
@@ -35,6 +36,11 @@ const sections = [
  * Supports Excel (.xlsx) and CSV files with a column named "URL".
  */
 function resolveInputFile() {
+  const overridePath = process.argv[2];
+  if (overridePath && fs.existsSync(overridePath)) {
+    return overridePath;
+  }
+
   const existingFile = INPUT_CANDIDATES.find(file => fs.existsSync(file));
   if (!existingFile) {
     throw new Error(`Input file not found. Expected one of: ${INPUT_CANDIDATES.join(', ')}`);
@@ -55,8 +61,37 @@ function normalizeUrl(value) {
   return val;
 }
 
-async function readInputUrls() {
+function isHtmlDumpFile(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return ['.html', '.htm', '.txt'].includes(ext);
+}
+
+function inferFundFromHtml(html, source) {
+  const metaMatch = html.match(/<meta[^>]+name=["']mutualFundsAPI["'][^>]+content=["']([^"']+)["']/i);
+  if (metaMatch) {
+    return metaMatch[1];
+  }
+
+  const titleMatch = html.match(/<title>([^<]+)/i);
+  if (titleMatch) {
+    const candidate = titleMatch[1].trim().split(/\s*[-–—]\s*/)[0];
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  const codeMatch = html.match(/\b([A-Z0-9]{4,8})\b/);
+  return codeMatch ? codeMatch[1] : path.basename(source);
+}
+
+async function readInputItems() {
   const inputFile = resolveInputFile();
+
+  if (isHtmlDumpFile(inputFile)) {
+    const html = fs.readFileSync(inputFile, 'utf8');
+    const fund = inferFundFromHtml(html, inputFile);
+    return [{ type: 'html', source: inputFile, html, fund }];
+  }
 
   if (inputFile.endsWith('.csv')) {
     const content = fs.readFileSync(inputFile, 'utf8');
@@ -74,34 +109,34 @@ async function readInputUrls() {
       throw new Error('CSV input must contain a URL or FundCode column.');
     }
 
-    const urls = [];
+    const items = [];
     for (let i = 1; i < lines.length; i++) {
       const cells = lines[i].split(',');
       const rawValue = (urlIndex !== -1 ? cells[urlIndex] : cells[fundcodeIndex]) || '';
       const normalized = normalizeUrl(rawValue);
       if (normalized) {
-        urls.push(normalized);
+        items.push({ type: 'url', url: normalized });
       }
     }
 
-    return urls;
+    return items;
   }
 
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.readFile(inputFile);
   const worksheet = workbook.getWorksheet(1); // first sheet
 
-  const urls = [];
+  const items = [];
   worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
     if (rowNumber === 1) return; // skip header
     const urlCell = row.getCell('URL');
     const normalized = normalizeUrl(urlCell && urlCell.value ? urlCell.value : '');
     if (normalized) {
-      urls.push(normalized);
+      items.push({ type: 'url', url: normalized });
     }
   });
 
-  return urls;
+  return items;
 }
 
 /**
@@ -124,22 +159,55 @@ async function processFundPage(page, url) {
       await page.waitForTimeout(4000);
     } catch (secondError) {
       console.error(`Error loading ${url}:`, secondError.message);
-      // Mark all sections as "No" if page fails
       sections.forEach(s => { result[s.name] = 'No'; });
+      result.error = secondError.message;
       return result;
     }
   }
 
-  // Check each section
-  for (const section of sections) {
-    try {
-      const locator = page.getByText(section.text, { exact: false });
-      const isVisible = await locator.first().isVisible().catch(() => false);
-      result[section.name] = isVisible ? 'Yes' : 'No';
-    } catch (err) {
-      // If any error, treat as not found
+  const pageContent = await page.content().catch(() => '');
+  return analyzeHtmlResult(pageContent, url);
+}
+
+function analyzeHtmlResult(html, source) {
+  const result = {
+    url: source,
+    fund: inferFundFromHtml(html, source),
+  };
+
+  const lowerContent = html.toLowerCase();
+  const hasWarningElement = lowerContent.includes(UNAVAILABLE_MESSAGE);
+
+  let searchIndex = 0;
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
+    const sectionText = section.text.toLowerCase();
+
+    const sectionIndex = lowerContent.indexOf(sectionText, searchIndex);
+    if (sectionIndex === -1) {
       result[section.name] = 'No';
+      continue;
     }
+
+    const nextSectionIndex = sections.slice(i + 1)
+      .map(next => lowerContent.indexOf(next.text.toLowerCase(), sectionIndex + sectionText.length))
+      .filter(idx => idx !== -1)
+      .sort((a, b) => a - b)[0] || lowerContent.length;
+
+    const sectionRegion = lowerContent.slice(sectionIndex, nextSectionIndex);
+    const hasError = sectionRegion.includes(UNAVAILABLE_MESSAGE);
+    if (hasError) {
+      result.error = 'Fund performance temporarily unavailable';
+      result[section.name] = 'Yes with error';
+    } else {
+      result[section.name] = 'Yes';
+    }
+
+    searchIndex = sectionIndex + sectionText.length;
+  }
+
+  if (!result.error && hasWarningElement) {
+    result.error = 'Fund performance temporarily unavailable';
   }
 
   return result;
@@ -157,11 +225,12 @@ async function writeResults(results) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Validation Results');
 
-  // Build columns: URL, Fund, then each section
+  // Build columns: URL, Fund, each section, and Availability Error
   const columns = [
     { header: 'URL', key: 'url', width: 40 },
     { header: 'Fund Name', key: 'fund', width: 15 },
-    ...sections.map(s => ({ header: s.name, key: s.name, width: 25 }))
+    ...sections.map(s => ({ header: s.name, key: s.name, width: 25 })),
+    { header: 'Availability Error', key: 'error', width: 40 }
   ];
   worksheet.columns = columns;
 
@@ -170,14 +239,16 @@ async function writeResults(results) {
     worksheet.addRow(rowData);
   });
 
-  // Write file
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const outputFile = path.join(OUTPUT_DIR, `${OUTPUT_FILE_BASE}-${timestamp}.xlsx`);
+
   try {
-    await workbook.xlsx.writeFile(OUTPUT_FILE);
-    console.log(`Report written to ${OUTPUT_FILE}`);
+    await workbook.xlsx.writeFile(outputFile);
+    console.log(`Report written to ${outputFile}`);
   } catch (err) {
     if (err.code === 'EBUSY') {
-      const fallbackFile = path.join(OUTPUT_DIR, `FundSectionValidation-${Date.now()}.xlsx`);
-      console.warn(`Unable to write ${OUTPUT_FILE} because it is busy. Writing to ${fallbackFile} instead.`);
+      const fallbackFile = path.join(OUTPUT_DIR, `${OUTPUT_FILE_BASE}-${Date.now()}.xlsx`);
+      console.warn(`Unable to write ${outputFile} because it is busy. Writing to ${fallbackFile} instead.`);
       await workbook.xlsx.writeFile(fallbackFile);
       console.log(`Report written to ${fallbackFile}`);
     } else {
@@ -189,37 +260,52 @@ async function writeResults(results) {
 // ========================== MAIN ==========================
 
 (async () => {
-  console.log('Reading URLs from input file...');
-  let urls;
+  console.log('Reading input file...');
+  let items;
   try {
-    urls = await readInputUrls();
+    items = await readInputItems();
   } catch (err) {
     console.error('Failed to read input:', err.message);
     process.exit(1);
   }
 
-  if (urls.length === 0) {
-    console.warn('No URLs found in input file. Exiting.');
+  if (items.length === 0) {
+    console.warn('No input items found. Exiting.');
     process.exit(0);
   }
 
-  console.log(`Found ${urls.length} fund(s) to validate.`);
-
-  const browser = await chromium.launch({ headless: true }); // set false for debugging
-  const context = await browser.newContext();
-  const page = await context.newPage();
+  console.log(`Found ${items.length} fund(s) to validate.`);
 
   const results = [];
+  let browser = null;
+  let context = null;
+  let page = null;
 
-  for (let i = 0; i < urls.length; i++) {
-    const url = urls[i];
-    console.log(`[${i+1}/${urls.length}] Processing ${url}...`);
-    const result = await processFundPage(page, url);
-    results.push(result);
-    console.log(`  Done.`);
+  const needsBrowser = items.some(item => item.type === 'url');
+  if (needsBrowser) {
+    browser = await chromium.launch({ headless: true }); // set false for debugging
+    context = await browser.newContext();
+    page = await context.newPage();
   }
 
-  await browser.close();
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    console.log(`[${i+1}/${items.length}] Processing ${item.type === 'html' ? item.source : item.url}...`);
+    let result;
+
+    if (item.type === 'html') {
+      result = analyzeHtmlResult(item.html, item.source);
+    } else {
+      result = await processFundPage(page, item.url);
+    }
+
+    results.push(result);
+    console.log('  Done.');
+  }
+
+  if (browser) {
+    await browser.close();
+  }
 
   // Write results
   await writeResults(results);
