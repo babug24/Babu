@@ -33,3 +33,28 @@ https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWAQ
 https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/GIIAX/regions/current
 https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWALX/rankings-ratings/current
 https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWXEX/credit-qualities
+
+https://api-int.nwie.net/funds-and-assets-management/fund-profile/v1/funds/GGEAX/rankings-ratings/current
+Key                 Value
+client_id           kC3lf2PwHUCH49fWIoG4hhoDt0iGmtOZ
+X-NW-Message-ID     headerMsgId
+
+
+NF_pricing-and-performance
+https://api.morningstar.com/v2/service/mf/cfpd2hvanvthuj27/universeid/ehgip1b3j8dms1y9?accesscode=vvk9nkfor7hhilx0ic6xmzmhobm9gfhk&format=json
+Params
+Key Value
+accesscode vvk9nkfor7hilIx0ic6xmzmhobm9gfhk
+format json
+domain *
+
+mstarid_NF_get-accesscode
+script
+const res = pm.response.json();
+const code = res.accessCode || res.status?.accessCode;
+pm.collectionVariables.set("accesscode", code);
+
+pm.test("Got access code", () => 
+    pm.expect(code).to.be.a('string').and.not.empty
+);
+
