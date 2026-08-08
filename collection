@@ -1,0 +1,35 @@
+"Prod api - Postman - Add in Headers tab:
+1. client_id = kC3lf2PwHUCH49fWloG4hhoDt0iGmtOZ
+2. X-NW-Message-ID = 12345trtrtrttttrtrtr
+https://api.nationwide.com/funds-and-assets-management/fund-profile/v1/funds/NWALX
+https://api.nationwide.comfunds-and-assets-management/fund-profile/v1/funds/NWALX/funds-info
+https://api.nationwide.com/funds-and-assets-management/fund-profile/v1/funds/NWALX/annual-returns/current
+https://api.nationwide.com/funds-and-assets-management/fund-profile/v1/funds/NWXEX/calendar-year-returns/current
+https://api.nationwide.com/funds-and-assets-management/fund-profile/v1/funds/GIIAX/growth-of-10ks?startDate=02/28/2015&endDate=02/10/2022
+https://api.nationwide.com/funds-and-assets-management/fund-profile/v1/funds/NWAQX/charges/current
+https://api.nationwide.com/funds-and-assets-management/fund-profile/v1/funds/NWALX/asset-allocations/current
+https://api.nationwide.com/funds-and-assets-management/fund-profile/v1/funds/NWAQX/sector-allocations/current
+https://api.nationwide.com/funds-and-assets-management/fund-profile/v1/funds/NWAQX/portfolio-characteristics/current
+https://api.nationwide.com/funds-and-assets-management/fund-profile/v1/funds/NWAQX/styles/current
+https://api.nationwide.com/funds-and-assets-management/fund-profile/v1/funds/GIIAX/regions/current
+https://api.nationwide.com/funds-and-assets-management/fund-profile/v1/funds/NWALX/rankings-ratings/current
+https://api.nationwide.com/funds-and-assets-management/fund-profile/v1/funds/NWXEX/credit-qualities
+
+
+
+"Dev api - Postman - Add in Headers tab:
+1. client_id = MD3wYsOGbRAvkJR7NWtouTF0JgRyvgAM
+2. X-NW-Message-ID = 12345trtrtrttttrtrtr"
+https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWALX
+https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWALX/funds-info
+https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWALX/annual-returns/current
+https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWXEX/calendar-year-returns/current
+https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/GIIAX/growth-of-10ks?startDate=02/28/2015&endDate=02/10/2022
+https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWAQX/charges/current
+https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWALX/asset-allocations/current
+https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWAQX/sector-allocations/current
+https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWAQX/portfolio-characteristics/current
+https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWAQX/styles/current
+https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/GIIAX/regions/current
+https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWALX/rankings-ratings/current
+https://api-test.nwie.net/funds-and-assets-management/fund-profile/v1/funds/NWXEX/credit-qualities
