@@ -1,5 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const https = require('https');
 const { spawn } = require('child_process');
 const { Builder, By, until } = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
@@ -17,9 +19,12 @@ class ErrorMessageValidator {
             "This site can't be reached",
             "Details for this policy are no longer available. Please return to the",
             "We Are Having Technical Difficulties",
+            "Thank you for visiting our site, we are experiencing technical difficulties with your most recent request. Please try again later. If the error continues, contact us at 800-321-6064.",
             "Please first review the guidelines below and register to participate in using Generative AI websites",
             "No webpage was found for the web address",
             "Application Unavailable",
+            "# undefined",
+            "Data currently unavailable; please try again later.",
             // ── 4xx ─────────────────────────────────────────────────────────────────
             "404 Not Found", "404 – Not Found", "404 — Not Found", "Error 404",
             "403 Forbidden", "403 – Forbidden", "403 — Forbidden", "Error 403",
@@ -50,6 +55,7 @@ class ErrorMessageValidator {
         this.maxUrlsPerSession = options.maxUrlsPerSession || 30;
         this.skippedRows = [];
         this.sessionLostCount = 0;
+        this.pageLoadTimeoutMs = options.pageLoadTimeoutMs || 60000;
         this.ambiguousErrorMessages = new Set([
             'Access Denied', 'Access denied', 'Authentication required',
             'Rate limit exceeded', 'Too Many Requests',
@@ -86,7 +92,7 @@ class ErrorMessageValidator {
         options.setUserPreferences({ 'profile.managed_default_content_settings.images': 2 });
         try {
             this.driver = await new Builder().forBrowser('chrome').setChromeOptions(options).build();
-            await this.driver.manage().setTimeouts({ implicit: 5000, pageLoad: 30000 });
+            await this.driver.manage().setTimeouts({ implicit: 5000, pageLoad: this.pageLoadTimeoutMs });
             console.log('Chrome WebDriver initialized successfully');
         } catch (error) {
             console.error('Error initializing Chrome WebDriver:', error.message);
@@ -105,7 +111,7 @@ class ErrorMessageValidator {
         options.setUserPreferences({ 'profile.managed_default_content_settings.images': 2 });
         try {
             this.driver = await new Builder().forBrowser('MicrosoftEdge').setEdgeOptions(options).build();
-            await this.driver.manage().setTimeouts({ implicit: 5000, pageLoad: 30000 });
+            await this.driver.manage().setTimeouts({ implicit: 5000, pageLoad: this.pageLoadTimeoutMs });
             console.log('Edge WebDriver initialized successfully');
         } catch (error) {
             console.error('Error initializing Edge WebDriver:', error.message);
@@ -125,6 +131,10 @@ class ErrorMessageValidator {
         try { await this.driver.quit(); } catch (_) { /* ignore */ }
         if (this.browser === 'edge') await this.setupEdgeDriver();
         else await this.setupChromeDriver();
+    }
+
+    isRendererTimeoutError(message = '') {
+        return /timed out receiving message from renderer/i.test(message);
     }
 
     // ─── Cookie consent (1s timeout) ────────────────────────────────────────────
@@ -477,8 +487,116 @@ class ErrorMessageValidator {
         } catch (_) { /* non-critical */ }
     }
 
+    // ─── Validate a PDF URL via HTTP HEAD (no Selenium) ──────────────────────
+    async validatePdfUrl(url) {
+        const testStart = new Date();
+        console.log('\n' + '='.repeat(60));
+        console.log(`Testing PDF URL: ${url}`);
+        console.log('='.repeat(60));
+
+        const makeHeadRequest = (targetUrl, redirectCount = 0) => {
+            return new Promise((resolve, reject) => {
+                if (redirectCount > 5) return reject(new Error('Too many redirects'));
+                let parsed;
+                try { parsed = new URL(targetUrl); } catch (e) { return reject(new Error(`Invalid URL: ${targetUrl}`)); }
+                const lib = parsed.protocol === 'https:' ? https : http;
+                const options = {
+                    hostname: parsed.hostname,
+                    port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
+                    path: parsed.pathname + parsed.search,
+                    method: 'HEAD',
+                    timeout: 30000,
+                    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ErrorValidator/1.0)' }
+                };
+                const req = lib.request(options, (res) => {
+                    res.resume(); // discard body
+                    if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
+                        const loc = res.headers.location.startsWith('http')
+                            ? res.headers.location
+                            : new URL(res.headers.location, targetUrl).href;
+                        resolve(makeHeadRequest(loc, redirectCount + 1));
+                    } else {
+                        resolve({ statusCode: res.statusCode, contentType: res.headers['content-type'] || '' });
+                    }
+                });
+                req.on('error', reject);
+                req.on('timeout', () => { req.destroy(); reject(new Error('Request timed out')); });
+                req.end();
+            });
+        };
+
+        try {
+            console.log('1. Sending HEAD request...');
+            const { statusCode, contentType } = await makeHeadRequest(url);
+            const duration = (new Date() - testStart) / 1000;
+            console.log(`   Status: ${statusCode}`);
+            console.log(`   Content-Type: ${contentType}`);
+
+            const isOk = statusCode >= 200 && statusCode < 300;
+            const isPdf = /application\/pdf/i.test(contentType) ||
+                          /application\/octet-stream/i.test(contentType) ||
+                          contentType === '' || // some servers omit content-type for static assets
+                          /\.pdf(\?.*)?$/i.test(url);
+
+            let status, errorFound, errors, details;
+            if (!isOk) {
+                status = 'FAIL'; errorFound = true;
+                const msg = `HTTP ${statusCode} — PDF not accessible`;
+                errors = [{ message: msg, location: 'http_response', details: `HTTP status: ${statusCode}` }];
+                details = msg;
+                console.log(`\n❌ RESULT: FAIL - ${msg}`);
+            } else if (!isPdf) {
+                status = 'FAIL'; errorFound = true;
+                const msg = `Unexpected Content-Type "${contentType}" — not a PDF`;
+                errors = [{ message: msg, location: 'http_response', details: `Content-Type: ${contentType}` }];
+                details = msg;
+                console.log(`\n❌ RESULT: FAIL - ${msg}`);
+            } else {
+                status = 'PASS'; errorFound = false; errors = [];
+                details = `PDF accessible (HTTP ${statusCode})`;
+                if (contentType) details += `, Content-Type: ${contentType}`;
+                console.log(`\n✅ RESULT: PASS - ${details}`);
+            }
+
+            const result = {
+                url, status, error_found: errorFound, errors,
+                consent_handled: false, cookie_warning: false,
+                in_page_source: false, in_visible_text: false,
+                in_overlays: false, rendering_errors: false,
+                in_title: false, page_loaded: true,
+                duration, error_count: errors.length,
+                timestamp: testStart.toISOString().replace('T', ' ').substr(0, 19),
+                screenshot: null, screenshot_failed: false, details
+            };
+            this.testResults.push(result);
+            return { success: !errorFound, result };
+
+        } catch (error) {
+            const duration = (new Date() - testStart) / 1000;
+            console.log(`\n⚠️ RESULT: ERROR - ${error.message}`);
+            const result = {
+                url, status: 'ERROR', error_found: false, errors: [],
+                consent_handled: false, cookie_warning: false,
+                in_page_source: false, in_visible_text: false,
+                in_overlays: false, rendering_errors: false,
+                in_title: false, page_loaded: false,
+                duration, error_count: 0, error_message: error.message,
+                timestamp: testStart.toISOString().replace('T', ' ').substr(0, 19),
+                screenshot: null, screenshot_failed: false,
+                details: `Network error: ${error.message}`
+            };
+            this.testResults.push(result);
+            return { success: false, result };
+        }
+    }
+
     // ─── Validate a single URL ────────────────────────────────────────────────
     async validatePage(url, retryCount = 0) {
+        // PDF URLs are validated via HTTP HEAD — no Selenium needed
+        if (/\.pdf(\?.*)?$/i.test(url)) {
+            return await this.validatePdfUrl(url);
+        }
+
         const testStart = new Date();
         this.polledErrors = [];
         console.log('\n' + '='.repeat(60));
@@ -606,12 +724,20 @@ class ErrorMessageValidator {
             const duration = (new Date() - testStart) / 1000;
             const msg = error.message || '';
             const isTimeout = msg.includes('timeout') || msg.includes('Timed out');
+            const isRendererTimeout = this.isRendererTimeoutError(msg);
             const isNetwork = isTimeout || /net::|ERR_|ECONNREFUSED|ENOTFOUND|ECONNRESET/.test(msg);
             const isSession = /no such session|invalid session id|session deleted|Unable to find a matching set of capabilities|WebDriverError/.test(msg);
-            const shouldRetry = (isNetwork || isSession) && retryCount < 1;
+            const maxRetries = isRendererTimeout ? 2 : 1;
+            const shouldRetry = (isNetwork || isSession) && retryCount < maxRetries;
 
             if (shouldRetry) {
-                const reason = isSession ? 'Browser session died' : isTimeout ? 'Page load timeout' : 'Network error';
+                const reason = isSession
+                    ? 'Browser session died'
+                    : isRendererTimeout
+                        ? 'Renderer timeout'
+                        : isTimeout
+                            ? 'Page load timeout'
+                            : 'Network error';
                 console.log(`⚠️ ${reason} detected, retrying with fresh browser...`);
                 try {
                     await this.close();
@@ -651,26 +777,32 @@ class ErrorMessageValidator {
         this.testStartTime = new Date();
         const csvContent = fs.readFileSync(csvFilePath, 'utf-8');
         const lines = csvContent.split('\n').filter(line => line.trim());
-        let startIndex = 0;
-        if (lines.length > 0 && !lines[0].toLowerCase().startsWith('http')) startIndex = 1;
+        const { urlColumn: effectiveUrlColumn, hasHeader, autoDetected } = resolveUrlColumn(lines, urlColumn);
+        let startIndex = hasHeader ? 1 : 0;
 
-        const urls = lines.slice(startIndex).map(line => {
-            const cols = line.split(',');
-            return cols[urlColumn] ? cols[urlColumn].trim() : null;
-        }).filter(url => url && url.startsWith('http'));
+        if (autoDetected) {
+            console.log(`ℹ️  Auto-detected URL column: ${effectiveUrlColumn} (header-based)`);
+        }
+
+        const urls = [];
 
         this.skippedRows = [];
         lines.slice(startIndex).forEach((line, idx) => {
             const row = startIndex + idx + 1;
-            const cols = line.split(',');
-            if (urlColumn >= cols.length) {
-                this.skippedRows.push({ row, raw: line.trim(), reason: `Column ${urlColumn} out of bounds (${cols.length} column(s))` });
+            const cols = splitCsvColumns(line);
+
+            // Skip accidental duplicate header rows in the body.
+            if (isLikelyHeaderRow(cols)) {
+                this.skippedRows.push({ row, raw: line.trim(), reason: 'Duplicate header row found in CSV body' });
+                return;
+            }
+
+            if (effectiveUrlColumn >= cols.length) {
+                this.skippedRows.push({ row, raw: line.trim(), reason: `Column ${effectiveUrlColumn} out of bounds (${cols.length} column(s))` });
             } else {
-                const candidate = cols[urlColumn] ? cols[urlColumn].trim() : '';
-                if (!candidate) this.skippedRows.push({ row, raw: line.trim(), reason: 'Empty cell in URL column' });
-                else if (!candidate.startsWith('http')) {
-                    this.skippedRows.push({ row, raw: line.trim(), reason: `Value does not start with http: "${candidate.substring(0,80)}"` });
-                }
+                const { normalized, reason } = normalizeUrlCandidate(cols[effectiveUrlColumn]);
+                if (normalized) urls.push(normalized);
+                else this.skippedRows.push({ row, raw: line.trim(), reason });
             }
         });
 
@@ -833,16 +965,87 @@ function getEnvironmentFromCsv(csvFilePath) {
         const content = fs.readFileSync(csvFilePath, 'utf-8');
         const lines = content.split('\n').filter(l => l.trim());
         if (lines.length < 2) return '';
-        if (!lines[0].toLowerCase().startsWith('http')) {
-            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-            const idx = headers.indexOf('environment');
-            if (idx !== -1 && lines.length > 1) {
-                const cols = lines[1].split(',');
-                return cols[idx] ? cols[idx].trim() : '';
+
+        const headers = splitCsvColumns(lines[0]).map(h => h.trim().toLowerCase());
+        const idx = headers.indexOf('environment');
+        if (idx !== -1) {
+            for (let i = 1; i < lines.length; i++) {
+                const cols = splitCsvColumns(lines[i]);
+                if (isLikelyHeaderRow(cols)) continue;
+                const env = cols[idx] ? cols[idx].trim() : '';
+                return sanitizeFileComponent(env);
             }
         }
+
         return '';
     } catch (_) { return ''; }
+}
+
+function normalizeUrlCandidate(value) {
+    const candidate = (value || '').trim().replace(/^"|"$/g, '');
+    if (!candidate) return { normalized: null, reason: 'Empty cell in URL column' };
+    if (/^https?:\/\//i.test(candidate)) return { normalized: candidate, reason: null };
+
+    // Support CSVs that provide host/path without scheme, e.g. www-ng.nationwide.com/path
+    if (/^[a-z0-9.-]+\.[a-z]{2,}(\/.*)?$/i.test(candidate)) {
+        return { normalized: `https://${candidate}`, reason: null };
+    }
+
+    return {
+        normalized: null,
+        reason: `Value is not a valid URL/domain: "${candidate.substring(0, 80)}"`
+    };
+}
+
+function hasHeaderRow(lines, urlColumn = 0) {
+    if (!lines || lines.length === 0) return false;
+    const columns = splitCsvColumns(lines[0]);
+    const raw = columns[urlColumn] || '';
+    const header = raw.trim().replace(/^"|"$/g, '').toLowerCase();
+    return ['url', 'urls', 'link', 'links', 'page', 'pages'].includes(header);
+}
+
+function resolveUrlColumn(lines, requestedColumn = 0) {
+    if (!lines || lines.length === 0) {
+        return { urlColumn: requestedColumn, hasHeader: false, autoDetected: false };
+    }
+
+    const headerNames = ['url', 'urls', 'link', 'links', 'page', 'pages'];
+    const columns = splitCsvColumns(lines[0]).map(c => c.trim().replace(/^"|"$/g, '').toLowerCase());
+    const requestedLooksLikeHeader = hasHeaderRow(lines, requestedColumn);
+
+    if (requestedLooksLikeHeader) {
+        return { urlColumn: requestedColumn, hasHeader: true, autoDetected: false };
+    }
+
+    const detectedHeaderIndex = columns.findIndex(c => headerNames.includes(c));
+
+    // If caller used default column 0 (or an invalid index), prefer explicit URL-like headers.
+    if (detectedHeaderIndex !== -1 && (requestedColumn === 0 || requestedColumn >= columns.length)) {
+        return { urlColumn: detectedHeaderIndex, hasHeader: true, autoDetected: detectedHeaderIndex !== requestedColumn };
+    }
+
+    return { urlColumn: requestedColumn, hasHeader: false, autoDetected: false };
+}
+
+function splitCsvColumns(line) {
+    const raw = String(line || '').replace(/\r$/, '');
+    const delimiter = (raw.includes('\t') && !raw.includes(',')) ? '\t' : ',';
+    return raw.split(delimiter).map(c => c.trim());
+}
+
+function isLikelyHeaderRow(columns) {
+    if (!columns || columns.length === 0) return false;
+    const normalized = columns.map(c => String(c || '').trim().toLowerCase());
+    return normalized.includes('environment') && normalized.some(c => ['url', 'urls', 'link', 'links', 'page', 'pages'].includes(c));
+}
+
+function sanitizeFileComponent(value) {
+    const cleaned = String(value || '')
+        .replace(/[\\/:*?"<>|\u0000-\u001F]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return cleaned;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -892,11 +1095,19 @@ Options:
         // Read URLs
         const content = fs.readFileSync(csvFile, 'utf-8');
         const lines = content.split('\n').filter(l => l.trim());
-        let start = 0;
-        if (lines.length > 0 && !lines[0].toLowerCase().startsWith('http')) start = 1;
+        const { urlColumn: effectiveUrlColumn, hasHeader, autoDetected } = resolveUrlColumn(lines, col);
+        let start = hasHeader ? 1 : 0;
+        if (autoDetected) {
+            console.log(`ℹ️  Auto-detected URL column: ${effectiveUrlColumn} (header-based)`);
+        }
         const urls = lines.slice(start)
-            .map(line => { const parts = line.split(','); return parts[col] ? parts[col].trim() : null; })
-            .filter(u => u && u.startsWith('http'));
+            .map(line => {
+                const parts = splitCsvColumns(line);
+                if (isLikelyHeaderRow(parts)) return null;
+                const { normalized } = normalizeUrlCandidate(parts[effectiveUrlColumn]);
+                return normalized;
+            })
+            .filter(Boolean);
 
         if (urls.length === 0) {
             console.error('No valid URLs found in CSV.');
@@ -922,7 +1133,7 @@ Options:
         // Spawn child processes
         const children = [];
         chunkFiles.forEach((file) => {
-            const childArgs = ['error_validator.js', '--file', file, '--column', '0', '--browser', browser];
+            const childArgs = ['Updated_error_validator.js', '--file', file, '--column', '0', '--browser', browser];
             if (headless) childArgs.push('--headless');
             else childArgs.push('--headed');
             // Do NOT pass --parallel to children
@@ -961,7 +1172,7 @@ Options:
 
     const ts = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').substr(0, 19);
     const reportsDir = path.join(__dirname, 'Reports');
-    const env = getEnvironmentFromCsv(csvFile);
+    const env = sanitizeFileComponent(getEnvironmentFromCsv(csvFile));
     const reportPath = path.join(reportsDir, `${env}_ErrorMessageValidation_${ts}.html`);
     if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true });
 
