@@ -174,6 +174,12 @@ const EXCLUDED_HOST_SELECTOR = 'bolt-header-wc';
 //   .bolt-header-panel-promos  — promo tile drawer (CSS class on a <div>)
 //   .bolt-header-panel-footer  — footer link row inside header drawers (CSS class on a <div>)
 const INCLUDED_PANEL_SELECTOR = '.bolt-header-panel-promos, .bolt-header-panel-footer';
+const VISUAL_PROMO_MAP_SELECTOR = 'ngx-web-visual-content-promo-map';
+const VISUAL_PROMO_MAP_TRIGGER_SELECTOR = 'button, bolt-button, [role="button"], summary, [aria-expanded], [aria-controls]';
+const STICKY_CTA_SELECTOR = 'ngx-web-sticky-cta';
+const STICKY_CTA_TRIGGER_SELECTOR = 'bolt-button#stickyCtaButton, bolt-button[type="primary"], bolt-button';
+const ACCORDION_ITEM_SELECTOR = 'li.accordion-item';
+const ACCORDION_TRIGGER_SELECTOR = 'a[role="tab"], button[aria-expanded], [role="button"][aria-expanded], .accordion-title';
 const BATCH_SIZE = 100; // Process 100 URLs before restarting browser to prevent memory leaks
 const BATCH_PAUSE_MS = 2000; // Pause 2 seconds between batches
 const STABILIZATION_PASSES = 3; // Re-extract multiple times to reduce transient misses
@@ -207,13 +213,265 @@ function mergeLinkArrays(baseLinks, extraLinks, defaultViewportSource = null) {
   return Array.from(byKey.values());
 }
 
+async function expandVisualPromoMapLinks(page) {
+  const components = page.locator(VISUAL_PROMO_MAP_SELECTOR);
+  const componentCount = await components.count().catch(() => 0);
+  if (componentCount === 0) return 0;
+
+  let expandedCount = 0;
+
+  for (let index = 0; index < componentCount; index++) {
+    const component = components.nth(index);
+
+    // Some promo components are rendered below the fold; scroll to make
+    // framework-managed controls reliably interactable before probing them.
+    await component.scrollIntoViewIfNeeded().catch(() => {});
+    await page.waitForTimeout(150);
+
+    let beforeCount = 0;
+    try {
+      beforeCount = await component.locator('a[href]').count();
+    } catch (_) {
+      continue;
+    }
+
+    try {
+      const triggers = component.locator(VISUAL_PROMO_MAP_TRIGGER_SELECTOR);
+      const triggerCount = await triggers.count().catch(() => 0);
+      if (triggerCount === 0) continue;
+
+      // Track the largest anchor count observed while toggling available controls.
+      // Some promo-map variants expose multiple controls, each revealing a different
+      // subset of links; stopping after the first increase can miss required links.
+      let maxAnchorCount = beforeCount;
+
+      for (let triggerIndex = 0; triggerIndex < triggerCount; triggerIndex++) {
+        const trigger = triggers.nth(triggerIndex);
+        if (!(await trigger.isVisible().catch(() => false))) continue;
+
+        await trigger.scrollIntoViewIfNeeded().catch(() => {});
+        await page.waitForTimeout(100);
+
+        await trigger.click({ force: true, timeout: 3000 });
+        // Angular/CMS content can hydrate asynchronously after click.
+        // Poll briefly so late-rendered anchors are still detected.
+        let afterCount = maxAnchorCount;
+        for (let poll = 0; poll < 6; poll++) {
+          await page.waitForTimeout(250);
+          afterCount = await component.locator('a[href]').count().catch(() => afterCount);
+          if (afterCount > maxAnchorCount) break;
+        }
+
+        if (afterCount > maxAnchorCount) maxAnchorCount = afterCount;
+      }
+
+      if (maxAnchorCount > beforeCount) {
+        expandedCount++;
+      }
+    } catch (_) {
+      // Keep extraction resilient when the component is absent, already expanded, or non-interactive.
+    }
+  }
+
+  return expandedCount;
+}
+
+async function expandStickyCtaLinks(page) {
+  const components = page.locator(STICKY_CTA_SELECTOR);
+  const componentCount = await components.count().catch(() => 0);
+  if (componentCount === 0) return 0;
+
+  let expandedCount = 0;
+
+  for (let index = 0; index < componentCount; index++) {
+    const component = components.nth(index);
+
+    try {
+      // Sticky CTA variants often activate only after actual page scroll,
+      // not from local element scrolling. Sweep a few scroll depths first.
+      for (const ratio of [0.25, 0.5, 0.75]) {
+        await page.evaluate((scrollRatio) => {
+          const maxScroll = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+          window.scrollTo(0, Math.floor(maxScroll * scrollRatio));
+        }, ratio).catch(() => {});
+        await page.waitForTimeout(250);
+      }
+
+      await component.scrollIntoViewIfNeeded().catch(() => {});
+      await page.waitForTimeout(150);
+
+      const beforeCount = await component.locator('a[href]').count().catch(() => 0);
+      const primaryTrigger = component.locator('bolt-button#stickyCtaButton');
+      const fallbackTrigger = component.locator(STICKY_CTA_TRIGGER_SELECTOR).first();
+      const primaryCount = await primaryTrigger.count().catch(() => 0);
+      const trigger = primaryCount > 0 ? primaryTrigger.first() : fallbackTrigger;
+      const triggerCount = primaryCount > 0 ? primaryCount : await component.locator(STICKY_CTA_TRIGGER_SELECTOR).count().catch(() => 0);
+      if (triggerCount === 0) continue;
+
+      await trigger.scrollIntoViewIfNeeded().catch(() => {});
+      await page.waitForTimeout(100);
+      await trigger.click({ force: true, timeout: 3000 }).catch(() => {});
+
+      let afterCount = beforeCount;
+      for (let poll = 0; poll < 6; poll++) {
+        await page.waitForTimeout(250);
+        afterCount = await component.locator('a[href]').count().catch(() => afterCount);
+        if (afterCount > beforeCount) break;
+      }
+
+      if (afterCount > beforeCount) {
+        expandedCount++;
+      }
+    } catch (_) {
+      // Keep extraction resilient when sticky CTA markup varies between pages.
+    }
+  }
+
+  return expandedCount;
+}
+
+async function collectStickyCtaStateLinks(page, baseUrl, modeOverride = null) {
+  const components = page.locator(STICKY_CTA_SELECTOR);
+  const componentCount = await components.count().catch(() => 0);
+  if (componentCount === 0) return [];
+
+  let mergedLinks = [];
+
+  for (let index = 0; index < componentCount; index++) {
+    const component = components.nth(index);
+
+    try {
+      for (const ratio of [0.25, 0.5, 0.75]) {
+        await page.evaluate((scrollRatio) => {
+          const maxScroll = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+          window.scrollTo(0, Math.floor(maxScroll * scrollRatio));
+        }, ratio).catch(() => {});
+        await page.waitForTimeout(250);
+      }
+
+      const primaryTrigger = component.locator('bolt-button#stickyCtaButton');
+      const fallbackTrigger = component.locator(STICKY_CTA_TRIGGER_SELECTOR).first();
+      const primaryCount = await primaryTrigger.count().catch(() => 0);
+      const trigger = primaryCount > 0 ? primaryTrigger.first() : fallbackTrigger;
+      const triggerCount = primaryCount > 0 ? primaryCount : await component.locator(STICKY_CTA_TRIGGER_SELECTOR).count().catch(() => 0);
+      if (triggerCount === 0) continue;
+
+      await trigger.click({ force: true, timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(1200);
+
+      const stickyLinks = await component.evaluate((el) => {
+        return Array.from(el.querySelectorAll('a[href]')).map((anchor) => {
+          const text = (
+            anchor.textContent?.trim() ||
+            anchor.getAttribute('aria-label') ||
+            anchor.getAttribute('title') ||
+            'Unnamed link'
+          ).replace(/\s+/g, ' ').substring(0, 100);
+
+          return {
+            href: anchor.href || anchor.getAttribute('href') || '',
+            rawHref: anchor.getAttribute('href') || '',
+            text,
+            target: anchor.getAttribute('target') || '',
+            outerHtml: anchor.outerHTML.substring(0, 200),
+            elementType: 'HTML link',
+            angularClassification: 'standard',
+            hasNgxWrapper: false,
+            hasSpecialAttrs: false,
+            specialAttrNames: [],
+            isRichText: false
+          };
+        });
+      }).catch(() => []);
+
+      const stateLinks = await extractLinks(page, baseUrl, modeOverride);
+      mergedLinks = mergeLinkArrays(mergeLinkArrays(mergedLinks, stickyLinks), stateLinks);
+    } catch (_) {
+      // Keep extraction resilient when sticky CTA markup varies between pages.
+    }
+  }
+
+  return mergedLinks;
+}
+
+async function expandAccordionLinks(page) {
+  const items = page.locator(ACCORDION_ITEM_SELECTOR);
+  const itemCount = await items.count().catch(() => 0);
+  if (itemCount === 0) return 0;
+
+  let expandedCount = 0;
+
+  for (let index = 0; index < itemCount; index++) {
+    const item = items.nth(index);
+
+    try {
+      await item.scrollIntoViewIfNeeded().catch(() => {});
+      await page.waitForTimeout(80);
+
+      const trigger = item.locator(ACCORDION_TRIGGER_SELECTOR).first();
+      if (!(await trigger.isVisible().catch(() => false))) continue;
+
+      const itemClass = ((await item.getAttribute('class').catch(() => '')) || '').toLowerCase();
+      const ariaExpanded = ((await trigger.getAttribute('aria-expanded').catch(() => '')) || '').toLowerCase();
+      const isExpanded = itemClass.includes('is-active') || ariaExpanded === 'true';
+      if (isExpanded) continue;
+
+      await trigger.click({ force: true, timeout: 3000 });
+      await page.waitForTimeout(250);
+
+      const updatedClass = ((await item.getAttribute('class').catch(() => '')) || '').toLowerCase();
+      const updatedAria = ((await trigger.getAttribute('aria-expanded').catch(() => '')) || '').toLowerCase();
+      if (updatedClass.includes('is-active') || updatedAria === 'true') {
+        expandedCount++;
+      }
+    } catch (_) {
+      // Keep extraction resilient when accordion markup varies between pages.
+    }
+  }
+
+  return expandedCount;
+}
+
+async function collectAccordionStateLinks(page, baseUrl, modeOverride = null) {
+  const items = page.locator(ACCORDION_ITEM_SELECTOR);
+  const itemCount = await items.count().catch(() => 0);
+  if (itemCount === 0) return [];
+
+  let mergedLinks = [];
+
+  for (let index = 0; index < itemCount; index++) {
+    const item = items.nth(index);
+
+    try {
+      await item.scrollIntoViewIfNeeded().catch(() => {});
+      await page.waitForTimeout(80);
+
+      const trigger = item.locator(ACCORDION_TRIGGER_SELECTOR).first();
+      if (!(await trigger.isVisible().catch(() => false))) continue;
+
+      await trigger.click({ force: true, timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(350);
+
+      const stateLinks = await extractLinks(page, baseUrl, modeOverride);
+      mergedLinks = mergeLinkArrays(mergedLinks, stateLinks);
+    } catch (_) {
+      // Keep extraction resilient when accordion markup varies between pages.
+    }
+  }
+
+  return mergedLinks;
+}
+
 async function extractUnifiedLinksStabilized(context, desktopPage, baseUrl) {
   let mergedLinks = [];
   let mergedMetadata = {
     _excludedCount: 0,
     _containerFound: 0,
     _responsiveHiddenCount: 0,
-    _selectExpandedCount: 0
+    _selectExpandedCount: 0,
+    _promoMapExpandedCount: 0,
+    _stickyCtaExpandedCount: 0,
+    _accordionExpandedCount: 0
   };
 
   for (let pass = 1; pass <= STABILIZATION_PASSES; pass++) {
@@ -221,8 +479,16 @@ async function extractUnifiedLinksStabilized(context, desktopPage, baseUrl) {
       await desktopPage.waitForTimeout(STABILIZATION_DELAY_MS);
     }
 
+    mergedMetadata._promoMapExpandedCount += await expandVisualPromoMapLinks(desktopPage);
+    mergedMetadata._stickyCtaExpandedCount += await expandStickyCtaLinks(desktopPage);
+    mergedMetadata._accordionExpandedCount += await expandAccordionLinks(desktopPage);
+
     const desktopLinks = await extractLinks(desktopPage, baseUrl, false);
+    const desktopStickyLinks = await collectStickyCtaStateLinks(desktopPage, baseUrl, false);
+    const desktopAccordionLinks = await collectAccordionStateLinks(desktopPage, baseUrl, false);
     let mobileLinks = [];
+    let mobileStickyLinks = [];
+    let mobileAccordionLinks = [];
     let mobilePage;
 
     try {
@@ -232,15 +498,22 @@ async function extractUnifiedLinksStabilized(context, desktopPage, baseUrl) {
         await mobilePage.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
         await waitForPageLoad(mobilePage);
       });
+      mergedMetadata._promoMapExpandedCount += await expandVisualPromoMapLinks(mobilePage);
+      mergedMetadata._stickyCtaExpandedCount += await expandStickyCtaLinks(mobilePage);
+      mergedMetadata._accordionExpandedCount += await expandAccordionLinks(mobilePage);
       mobileLinks = await extractLinks(mobilePage, baseUrl, true);
+      mobileStickyLinks = await collectStickyCtaStateLinks(mobilePage, baseUrl, true);
+      mobileAccordionLinks = await collectAccordionStateLinks(mobilePage, baseUrl, true);
     } catch (mobileErr) {
       console.log(`   ⚠️ Unified mobile extraction pass ${pass} failed (desktop links still kept): ${mobileErr.message}`);
     } finally {
       if (mobilePage) await mobilePage.close().catch(() => {});
     }
 
-    const desktopTagged = desktopLinks.map(link => ({ ...link, viewportSource: 'Desktop' }));
-    const mobileTagged = mobileLinks.map(link => ({ ...link, viewportSource: 'Mobile Only' }));
+    const desktopCombined = mergeLinkArrays(mergeLinkArrays(desktopLinks, desktopStickyLinks), desktopAccordionLinks);
+    const mobileCombined = mergeLinkArrays(mergeLinkArrays(mobileLinks, mobileStickyLinks), mobileAccordionLinks);
+    const desktopTagged = desktopCombined.map(link => ({ ...link, viewportSource: 'Desktop' }));
+    const mobileTagged = mobileCombined.map(link => ({ ...link, viewportSource: 'Mobile Only' }));
     const passMerged = mergeLinkArrays(desktopTagged, mobileTagged);
 
     mergedLinks = mergeLinkArrays(mergedLinks, passMerged);
@@ -249,13 +522,16 @@ async function extractUnifiedLinksStabilized(context, desktopPage, baseUrl) {
     mergedMetadata._responsiveHiddenCount = Math.max(mergedMetadata._responsiveHiddenCount, desktopLinks._responsiveHiddenCount || 0);
     mergedMetadata._selectExpandedCount += (desktopLinks._selectExpandedCount || 0) + (mobileLinks._selectExpandedCount || 0);
 
-    console.log(`   🔁 Stabilization pass ${pass}/${STABILIZATION_PASSES}: desktop=${desktopLinks.length}, mobile=${mobileLinks.length}, cumulative=${mergedLinks.length}`);
+    console.log(`   🔁 Stabilization pass ${pass}/${STABILIZATION_PASSES}: desktop=${desktopCombined.length}, mobile=${mobileCombined.length}, cumulative=${mergedLinks.length}`);
   }
 
   mergedLinks._excludedCount = mergedMetadata._excludedCount;
   mergedLinks._containerFound = mergedMetadata._containerFound;
   mergedLinks._responsiveHiddenCount = mergedMetadata._responsiveHiddenCount;
   mergedLinks._selectExpandedCount = mergedMetadata._selectExpandedCount;
+  mergedLinks._promoMapExpandedCount = mergedMetadata._promoMapExpandedCount;
+  mergedLinks._stickyCtaExpandedCount = mergedMetadata._stickyCtaExpandedCount;
+  mergedLinks._accordionExpandedCount = mergedMetadata._accordionExpandedCount;
 
   return mergedLinks;
 }
@@ -266,7 +542,10 @@ async function extractLinksStabilized(page, baseUrl) {
     _excludedCount: 0,
     _containerFound: 0,
     _responsiveHiddenCount: 0,
-    _selectExpandedCount: 0
+    _selectExpandedCount: 0,
+    _promoMapExpandedCount: 0,
+    _stickyCtaExpandedCount: 0,
+    _accordionExpandedCount: 0
   };
 
   for (let pass = 1; pass <= STABILIZATION_PASSES; pass++) {
@@ -274,20 +553,30 @@ async function extractLinksStabilized(page, baseUrl) {
       await page.waitForTimeout(STABILIZATION_DELAY_MS);
     }
 
+    mergedMetadata._promoMapExpandedCount += await expandVisualPromoMapLinks(page);
+    mergedMetadata._stickyCtaExpandedCount += await expandStickyCtaLinks(page);
+    mergedMetadata._accordionExpandedCount += await expandAccordionLinks(page);
+
     const extracted = await extractLinks(page, baseUrl);
-    mergedLinks = mergeLinkArrays(mergedLinks, extracted);
+    const stickyCtaLinks = await collectStickyCtaStateLinks(page, baseUrl);
+    const accordionLinks = await collectAccordionStateLinks(page, baseUrl);
+    const passLinks = mergeLinkArrays(mergeLinkArrays(extracted, stickyCtaLinks), accordionLinks);
+    mergedLinks = mergeLinkArrays(mergedLinks, passLinks);
     mergedMetadata._excludedCount = Math.max(mergedMetadata._excludedCount, extracted._excludedCount || 0);
     mergedMetadata._containerFound = Math.max(mergedMetadata._containerFound, extracted._containerFound || 0);
     mergedMetadata._responsiveHiddenCount = Math.max(mergedMetadata._responsiveHiddenCount, extracted._responsiveHiddenCount || 0);
     mergedMetadata._selectExpandedCount += extracted._selectExpandedCount || 0;
 
-    console.log(`   🔁 Stabilization pass ${pass}/${STABILIZATION_PASSES}: extracted=${extracted.length}, cumulative=${mergedLinks.length}`);
+    console.log(`   🔁 Stabilization pass ${pass}/${STABILIZATION_PASSES}: extracted=${passLinks.length}, cumulative=${mergedLinks.length}`);
   }
 
   mergedLinks._excludedCount = mergedMetadata._excludedCount;
   mergedLinks._containerFound = mergedMetadata._containerFound;
   mergedLinks._responsiveHiddenCount = mergedMetadata._responsiveHiddenCount;
   mergedLinks._selectExpandedCount = mergedMetadata._selectExpandedCount;
+  mergedLinks._promoMapExpandedCount = mergedMetadata._promoMapExpandedCount;
+  mergedLinks._stickyCtaExpandedCount = mergedMetadata._stickyCtaExpandedCount;
+  mergedLinks._accordionExpandedCount = mergedMetadata._accordionExpandedCount;
 
   return mergedLinks;
 }
@@ -1157,7 +1446,11 @@ function generateCombinedReport(allResults, timestamp) {
     fs.mkdirSync(REPORT_DIR, { recursive: true });
   }
 
-  const reportFile = path.join(REPORT_DIR, `combined_link_validation_${timestamp}.html`);
+  const safeEnvironmentName = (environmentName || 'Unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const aggregatePrefix = environmentName === 'Combined'
+    ? 'combined_link_validation'
+    : `${safeEnvironmentName}_link_validation`;
+  const reportFile = path.join(REPORT_DIR, `${aggregatePrefix}_${timestamp}.html`);
 
   // Group results by URL
   const groupedByUrl = {};
@@ -2482,6 +2775,89 @@ async function extractShadowPanelLinks(page, baseUrl) {
 }
 
 /**
+ * Extract links from bolt-tile style web components whose navigable anchors live
+ * inside open shadow roots rather than the light DOM.
+ *
+ * Targets: bolt-tile, bolt-card-tile, bolt-tile-cta, bolt-linked-list-item
+ */
+async function extractBoltTileShadowLinks(page, baseUrl) {
+  const tileSelectors = [
+    'bolt-tile',
+    'bolt-card-tile',
+    'bolt-tile-cta',
+    'bolt-linked-list-item'
+  ];
+
+  const results = [];
+  const seenKeys = new Set();
+
+  for (const selector of tileSelectors) {
+    let hosts = [];
+    try {
+      hosts = await page.locator(selector).all();
+    } catch (_) {
+      continue;
+    }
+
+    for (const host of hosts) {
+      let links = [];
+      try {
+        links = await host.evaluate((el) => {
+          const root = el.shadowRoot;
+          if (!root) return [];
+
+          return Array.from(root.querySelectorAll('a[href]')).map((anchor) => {
+            const text = (
+              anchor.textContent?.trim() ||
+              anchor.getAttribute('aria-label') ||
+              anchor.getAttribute('title') ||
+              el.getAttribute('data-title') ||
+              el.getAttribute('title') ||
+              'Unnamed link'
+            ).replace(/\s+/g, ' ').substring(0, 100);
+
+            return {
+              href: anchor.href || anchor.getAttribute('href') || '',
+              rawHref: anchor.getAttribute('href') || '',
+              text,
+              target: anchor.getAttribute('target') || '',
+              hostTag: el.tagName.toLowerCase()
+            };
+          });
+        });
+      } catch (_) {
+        continue;
+      }
+
+      for (const link of links) {
+        if (!link.href) continue;
+        const key = `${link.href}|${link.text}|${link.target}`;
+        if (seenKeys.has(key)) continue;
+        seenKeys.add(key);
+        results.push({
+          href: link.href,
+          rawHref: link.rawHref,
+          text: link.text,
+          target: link.target,
+          outerHtml: '',
+          elementType: 'HTML link',
+          angularClassification: 'standard',
+          hasNgxWrapper: false,
+          hasSpecialAttrs: false,
+          isRichText: false,
+          viewportSource: 'Desktop',
+          _fromBoltTileShadow: true,
+          _boltTileHostTag: link.hostTag
+        });
+      }
+    }
+  }
+
+  results._boltTileShadowCount = results.length;
+  return results;
+}
+
+/**
  * Extract non-href clickable elements (buttons, elements with role="button", JS-navigated elements)
  * Returns an array of objects: { href, rawHref, text, target, outerHtml, elementType, clickableType }
  * These are links that navigate via onClick handlers or routing, not traditional <a href> links
@@ -2985,7 +3361,7 @@ function checkAnchorIssues(url) {
 
 /**
  * Validate a single link by making an HTTP request.
- * Returns { statusCode, error, redirected }.
+ * Returns { statusCode, error, redirected, contentIssue }.
  * For external links, falls back to browser navigation if API request fails or returns 4xx/5xx.
  */
 async function validateLink(requestContext, absoluteUrl, retries = MAX_RETRIES, isExternal = false, browserContext = null) {
@@ -2997,6 +3373,29 @@ async function validateLink(requestContext, absoluteUrl, retries = MAX_RETRIES, 
       });
       const statusCode = response.status();
       
+      const redirected = (statusCode >= 300 && statusCode < 400) ? 'Yes' : 'No';
+
+      // Guard against false PASS for PDF links that return an HTML error page
+      // (e.g., "Application Unavailable") with HTTP 200.
+      const isPdfUrl = /\.pdf(?:$|[?#])/i.test(absoluteUrl);
+      if (isPdfUrl && statusCode >= 200 && statusCode < 400) {
+        const contentType = (response.headers()['content-type'] || '').toLowerCase();
+        if (!contentType.includes('pdf')) {
+          let contentError = `PDF URL returned unexpected content-type: ${contentType || 'unknown'}`;
+          if (contentType.includes('html') || contentType === '') {
+            try {
+              const body = (await response.text()).toLowerCase();
+              if (body.includes('application unavailable')) {
+                contentError = 'PDF URL returned Application Unavailable page';
+              }
+            } catch (_) {
+              // Leave contentError as-is if body cannot be read.
+            }
+          }
+          return { statusCode, error: contentError, redirected, contentIssue: true };
+        }
+      }
+
       // For external links with 4xx/5xx errors, try browser fallback
       if (isExternal && browserContext && statusCode >= 400 && attempt === 1) {
         let validationPage = null;
@@ -3013,16 +3412,15 @@ async function validateLink(requestContext, absoluteUrl, retries = MAX_RETRIES, 
           await validationPage.close();
           // Only use browser result if it's better (2xx/3xx)
           if (browserStatusCode >= 200 && browserStatusCode < 400) {
-            return { statusCode: browserStatusCode, error: null, redirected: browserRedirected };
+            return { statusCode: browserStatusCode, error: null, redirected: browserRedirected, contentIssue: false };
           }
         } catch (browserError) {
           if (validationPage) await validationPage.close().catch(() => {});
           console.log(`   ⚠️ Browser fallback also failed: ${browserError.message}`);
         }
       }
-      
-      const redirected = (statusCode >= 300 && statusCode < 400) ? 'Yes' : 'No';
-      return { statusCode: statusCode, error: null, redirected: redirected };
+
+      return { statusCode: statusCode, error: null, redirected: redirected, contentIssue: false };
     } catch (error) {
       if (attempt === retries) {
         // Fallback for external links: try with browser navigation in a new tab
@@ -3040,19 +3438,19 @@ async function validateLink(requestContext, absoluteUrl, retries = MAX_RETRIES, 
             const redirected = (statusCode >= 300 && statusCode < 400) ? 'Yes' : 'No';
             console.log(`   ✅ Browser fallback successful: HTTP ${statusCode}`);
             await validationPage.close();
-            return { statusCode: statusCode, error: null, redirected: redirected };
+            return { statusCode: statusCode, error: null, redirected: redirected, contentIssue: false };
           } catch (browserError) {
             if (validationPage) await validationPage.close().catch(() => {});
-            return { statusCode: null, error: error.message, redirected: 'N/A' };
+            return { statusCode: null, error: error.message, redirected: 'N/A', contentIssue: false };
           }
         }
-        return { statusCode: null, error: error.message, redirected: 'N/A' };
+        return { statusCode: null, error: error.message, redirected: 'N/A', contentIssue: false };
       }
       console.log(`   Retry ${attempt} for ${absoluteUrl}`);
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
-  return { statusCode: null, error: 'Max retries exceeded', redirected: 'N/A' };
+  return { statusCode: null, error: 'Max retries exceeded', redirected: 'N/A', contentIssue: false };
 }
  
 /**
@@ -3174,11 +3572,23 @@ function shouldSkipLink(href) {
           console.log(`   🔍 Shadow DOM (bolt-header-wc): ${shadowPanelCount} panel link(s) found, ${newShadowLinks.length} new (not in light DOM)`);
         }
 
+        const boltTileShadowLinks = await extractBoltTileShadowLinks(page, baseUrl);
+        const boltTileShadowCount = boltTileShadowLinks._boltTileShadowCount || 0;
+        if (boltTileShadowCount > 0) {
+          const existingKeys = new Set(links.map(l => `${l.href || ''}|${l.text || ''}|${l.target || ''}`));
+          const newBoltTileLinks = boltTileShadowLinks.filter(l => !existingKeys.has(`${l.href || ''}|${l.text || ''}|${l.target || ''}`));
+          links.push(...newBoltTileLinks);
+          console.log(`   🔍 Shadow DOM (bolt-tile): ${boltTileShadowCount} tile link(s) found, ${newBoltTileLinks.length} new (not in light DOM)`);
+        }
+
         const excludedCount        = links._excludedCount  || 0;
         const containerFound       = links._containerFound || 0;
         const nonHrefCount         = nonHrefLinks._nonHrefCount || 0;
         const responsiveHiddenCount = links._responsiveHiddenCount || 0;
         const selectExpandedCount  = links._selectExpandedCount || 0;
+        const promoMapExpandedCount = links._promoMapExpandedCount || 0;
+        const stickyCtaExpandedCount = links._stickyCtaExpandedCount || 0;
+        const accordionExpandedCount = links._accordionExpandedCount || 0;
 
         if (!UNIFIED_MODE) {
           if (REPORT_ALL_MODE) {
@@ -3194,6 +3604,15 @@ function shouldSkipLink(href) {
         }
         if (selectExpandedCount > 0) {
           console.log(`   🔽 Expanded ${selectExpandedCount} <select> option link(s) from select-driven Go button(s)`);
+        }
+        if (promoMapExpandedCount > 0) {
+          console.log(`   🗺️ Expanded ${promoMapExpandedCount} visual promo map component(s) before link extraction`);
+        }
+        if (stickyCtaExpandedCount > 0) {
+          console.log(`   📌 Expanded ${stickyCtaExpandedCount} sticky CTA component(s) before link extraction`);
+        }
+        if (accordionExpandedCount > 0) {
+          console.log(`   🪗 Expanded ${accordionExpandedCount} accordion section(s) before link extraction`);
         }
         if (nonHrefCount > 0) {
           console.log(`   Found ${nonHrefCount} non-href clickable element(s) (buttons, role="button", click handlers)`);
@@ -3569,9 +3988,11 @@ function shouldSkipLink(href) {
           }
           
           // Validate the link (with browser fallback for external links)
-          const { statusCode, error, redirected } = await validateLink(requestContext, absoluteUrl, MAX_RETRIES, isExternal, context);
-          const isSuccess = statusCode && statusCode >= 200 && statusCode < 400;
-          const actualMsg = statusCode ? `HTTP ${statusCode}` : `Error: ${error}`;
+          const { statusCode, error, redirected, contentIssue } = await validateLink(requestContext, absoluteUrl, MAX_RETRIES, isExternal, context);
+          const isSuccess = statusCode && statusCode >= 200 && statusCode < 400 && !contentIssue;
+          const actualMsg = statusCode
+            ? (contentIssue ? `HTTP ${statusCode} (content check failed)` : `HTTP ${statusCode}`)
+            : `Error: ${error}`;
           const expectedMsg = 'HTTP 2xx/3xx';
           
           // For internal links with valid anchors on the same page, validate the anchor exists on page
